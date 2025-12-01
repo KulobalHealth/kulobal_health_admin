@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { login } from '../../utils/authService';
 import loginImage from '../../assets/images/login.png';
 import logoImage from '../../assets/images/logo.png';
@@ -36,6 +37,12 @@ const Login = () => {
       };
       
       await login(credentials);
+      
+      // Show success toast
+      toast.success('Login successful!', {
+        position: "top-right",
+        autoClose: 3000,
+      });
       
       // Navigate to dashboard after successful login
       navigate('/dashboard');

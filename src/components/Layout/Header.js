@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HiBell, HiCheck, HiXMark } from 'react-icons/hi2';
+import { logout } from '../../utils/authService';
 import logoImage from '../../assets/images/logo.png';
 import './Header.css';
 
 const Header = () => {
+  const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationsRef = useRef(null);
@@ -103,6 +106,19 @@ const Header = () => {
 
   const handleDeleteNotification = (id) => {
     setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+  };
+
+  const handleLogout = async () => {
+    try {
+      // Call logout to clear server-side cookie and local storage
+      await logout();
+      // Navigate to login page
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still navigate to login even if logout endpoint fails
+      navigate('/');
+    }
   };
 
   return (
@@ -229,7 +245,7 @@ const Header = () => {
             <div className="user-dropdown">
               <button className="dropdown-item">Profile</button>
               <button className="dropdown-item">Settings</button>
-              <button className="dropdown-item">Logout</button>
+              <button className="dropdown-item" onClick={handleLogout}>Logout</button>
             </div>
           )}
         </div>

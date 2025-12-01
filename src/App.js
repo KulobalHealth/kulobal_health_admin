@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Layout from './components/Layout/Layout';
 import Login from './pages/auth/Login';
 import Dashboard from './pages/Dashboard';
@@ -23,29 +25,39 @@ function App() {
     <Router>
       <Routes>
         {/* Auth Routes */}
-        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Navigate to="/" replace />} />
         
         {/* Protected Routes with Layout */}
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="users" element={<Users />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="products" element={<Products />} />
-          <Route path="products/add" element={<AddProduct />} />
-          <Route path="products/edit/:id" element={<EditProduct />} />
-          <Route path="suppliers" element={<Suppliers />} />
-          <Route path="transactions" element={<Transactions />} />
-          <Route path="pharmacies" element={<Pharmacies />} />
-          <Route path="pharmacies/:id" element={<PharmacyDetail />} />
-          <Route path="settings" element={<Settings />} />
-          
-          {/* Uncomment and add routes as you create the pages */}
-          {/* <Route path="patients-care" element={<PatientsCare />} /> */}
-          {/* <Route path="ddi-integrators" element={<DDIIntegrators />} /> */}
-          {/* <Route path="analytics" element={<Analytics />} /> */}
-        </Route>
+        <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+        <Route path="/users" element={<Layout><Users /></Layout>} />
+        <Route path="/orders" element={<Layout><Orders /></Layout>} />
+        <Route path="/products" element={<Layout><Products /></Layout>} />
+        <Route path="/products/add" element={<Layout><AddProduct /></Layout>} />
+        <Route path="/products/edit/:id" element={<Layout><EditProduct /></Layout>} />
+        <Route path="/suppliers" element={<Layout><Suppliers /></Layout>} />
+        <Route path="/transactions" element={<Layout><Transactions /></Layout>} />
+        <Route path="/pharmacies" element={<Layout><Pharmacies /></Layout>} />
+        <Route path="/pharmacies/:id" element={<Layout><PharmacyDetail /></Layout>} />
+        <Route path="/settings" element={<Layout><Settings /></Layout>} />
+        
+        {/* Uncomment and add routes as you create the pages */}
+        {/* <Route path="/patients-care" element={<Layout><PatientsCare /></Layout>} /> */}
+        {/* <Route path="/ddi-integrators" element={<Layout><DDIIntegrators /></Layout>} /> */}
+        {/* <Route path="/analytics" element={<Layout><Analytics /></Layout>} /> */}
       </Routes>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </Router>
   );
 }

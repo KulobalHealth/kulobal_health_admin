@@ -52,9 +52,33 @@ const Products = () => {
         const productsData = response.data || response.products || response || [];
         setProducts(productsData);
       } catch (err) {
+        // Handle 401 errors gracefully - don't show error if token was cleared
+        // The Layout component will handle redirect
+        if (err.response?.status === 401) {
+          console.error('Authentication failed. Please login again.');
+          // Token is already cleared by apiClient, Layout will redirect
+          return;
+        }
+        
+        // Handle 404 errors - endpoint might not be implemented yet
+        if (err.response?.status === 404) {
+          const errorMsg = 'Products endpoint not found. Please verify the endpoint path with your backend developer. The endpoint may not be implemented yet.';
+          setError(errorMsg);
+          console.error('404 Error - Products endpoint:', {
+            message: err.message,
+            url: err.config?.baseURL + err.config?.url,
+            endpoint: err.config?.url,
+            suggestion: 'Check if the endpoint should be /product (singular) or a different path'
+          });
+          // Set empty array so UI can still render
+          setProducts([]);
+          return;
+        }
+        
         setError(err.message || 'Failed to fetch products');
         console.error('Error fetching products:', err);
         // Keep empty array on error, or you can set mock data as fallback
+        setProducts([]);
       } finally {
         setLoading(false);
       }

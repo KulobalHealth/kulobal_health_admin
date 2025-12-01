@@ -3,12 +3,15 @@ import apiClient from './apiClient';
 /**
  * Products Service
  * Handles all product-related API calls
+ * Base URL: https://kulobalhealth-backend-qlhm.onrender.com/api/v1/admin
+ * Endpoint: /product
+ * Full URL: https://kulobalhealth-backend-qlhm.onrender.com/api/v1/admin/product
  */
 
 // Get all products (with optional query parameters)
 export const getProducts = async (params = {}) => {
   try {
-    const response = await apiClient.get('/products', { params });
+    const response = await apiClient.get('/product', { params });
     return response.data;
   } catch (error) {
     throw error;
@@ -18,7 +21,7 @@ export const getProducts = async (params = {}) => {
 // Get single product by ID
 export const getProductById = async (id) => {
   try {
-    const response = await apiClient.get(`/products/${id}`);
+    const response = await apiClient.get(`/product/${id}`);
     return response.data;
   } catch (error) {
     throw error;
@@ -28,7 +31,7 @@ export const getProductById = async (id) => {
 // Create new product
 export const createProduct = async (productData) => {
   try {
-    const response = await apiClient.post('/products', productData);
+    const response = await apiClient.post('/product', productData);
     return response.data;
   } catch (error) {
     throw error;
@@ -38,7 +41,7 @@ export const createProduct = async (productData) => {
 // Update product
 export const updateProduct = async (id, productData) => {
   try {
-    const response = await apiClient.put(`/products/${id}`, productData);
+    const response = await apiClient.put(`/product/${id}`, productData);
     return response.data;
   } catch (error) {
     throw error;
@@ -48,7 +51,7 @@ export const updateProduct = async (id, productData) => {
 // Delete product
 export const deleteProduct = async (id) => {
   try {
-    const response = await apiClient.delete(`/products/${id}`);
+    const response = await apiClient.delete(`/product/${id}`);
     return response.data;
   } catch (error) {
     throw error;
@@ -58,7 +61,7 @@ export const deleteProduct = async (id) => {
 // Toggle product visibility
 export const toggleProductVisibility = async (id, visibility) => {
   try {
-    const response = await apiClient.patch(`/products/${id}/visibility`, { visibility });
+    const response = await apiClient.patch(`/product/${id}/visibility`, { visibility });
     return response.data;
   } catch (error) {
     throw error;
@@ -68,7 +71,7 @@ export const toggleProductVisibility = async (id, visibility) => {
 // Search products
 export const searchProducts = async (query, params = {}) => {
   try {
-    const response = await apiClient.get('/products/search', {
+    const response = await apiClient.get('/product/search', {
       params: { q: query, ...params },
     });
     return response.data;

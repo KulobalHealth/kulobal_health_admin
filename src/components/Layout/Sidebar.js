@@ -14,19 +14,24 @@ import {
   Settings01Icon,
   Logout01Icon,
 } from '@hugeicons/core-free-icons';
+import { logout } from '../../utils/authService';
 import './Sidebar.css';
 
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    // Clear any stored authentication tokens
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    
-    // Navigate to login page
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      // Call logout to clear server-side cookie and local storage
+      await logout();
+      // Navigate to login page
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still navigate to login even if logout endpoint fails
+      navigate('/');
+    }
   };
 
   const menuItems = [
