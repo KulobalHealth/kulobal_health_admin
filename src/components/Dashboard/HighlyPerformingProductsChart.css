@@ -1,0 +1,35 @@
+.highly-performing-chart {
+  width: 100%;
+}
+
+.chart-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0 0 24px 0;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.chart-summary {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.summary-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a202c;
+}

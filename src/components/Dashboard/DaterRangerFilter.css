@@ -1,0 +1,61 @@
+.date-filter-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  
+  .date-range-tabs {
+    display: flex;
+    gap: 8px;
+    background: #f3f4f6;
+    padding: 4px;
+    border-radius: 8px;
+  }
+  
+  .date-range-tab {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .date-range-tab:hover {
+    background: #e5e7eb;
+    color: #374151;
+  }
+  
+  .date-range-tab.active {
+    background: #00A170;
+    color: #ffffff;
+  }
+  
+  .date-picker-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .date-picker-button:hover {
+    border-color: #00A170;
+    color: #00A170;
+  }
+  
+  .date-picker-button svg {
+    width: 20px;
+    height: 20px;
+  }

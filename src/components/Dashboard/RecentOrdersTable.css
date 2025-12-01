@@ -1,0 +1,122 @@
+.recent-orders-table {
+    width: 100%;
+  }
+  
+  .table-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a202c;
+    margin: 0 0 20px 0;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+  }
+  
+  .orders-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .orders-table thead {
+    background: #f9fafb;
+  }
+  
+  .orders-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .orders-table td {
+    padding: 16px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 14px;
+    color: #374151;
+  }
+  
+  .orders-table tbody tr:hover {
+    background: #f9fafb;
+  }
+  
+  .order-id-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .order-icon {
+    flex-shrink: 0;
+  }
+  
+  .order-id-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .product-name {
+    font-weight: 500;
+    color: #1a202c;
+  }
+  
+  .order-id {
+    font-size: 12px;
+    color: #6b7280;
+  }
+  
+  .amount-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .amount {
+    font-weight: 600;
+    color: #1a202c;
+  }
+  
+  .payment-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6b7280;
+  }
+  
+  .payment-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00A170;
+  }
+  
+  .status-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: #6b7280;
+  }
+  
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #9ca3af;
+  }
+  
+  @media (max-width: 768px) {
+    .table-container {
+      overflow-x: scroll;
+    }
+  
+    .orders-table {
+      min-width: 800px;
+    }
+  }

@@ -1,0 +1,76 @@
+import React from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { HugeiconsIcon } from '@hugeicons/react';
+import {
+  Home01Icon,
+  UserGroup02Icon,
+  Building01Icon,
+  Link01Icon,
+  ShoppingCart01Icon,
+  TruckIcon,
+  Package01Icon,
+  CreditCardIcon,
+  Chart01Icon,
+  Settings01Icon,
+  Logout01Icon,
+} from '@hugeicons/core-free-icons';
+import './Sidebar.css';
+
+const Sidebar = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Clear any stored authentication tokens
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    
+    // Navigate to login page
+    navigate('/login');
+  };
+
+  const menuItems = [
+    { path: '/dashboard', label: 'Dashboard', icon: Home01Icon },
+    { path: '/patients-care', label: 'Patients Care', icon: UserGroup02Icon },
+    { path: '/pharmacies', label: 'Pharmacies', icon: Building01Icon },
+    { path: '/ddi-integrators', label: 'DDI Integrators', icon: Link01Icon },
+    { path: '/orders', label: 'Orders', icon: ShoppingCart01Icon },
+    { path: '/suppliers', label: 'Suppliers', icon: TruckIcon },
+    { path: '/products', label: 'Products', icon: Package01Icon },
+    { path: '/transactions', label: 'Transactions', icon: CreditCardIcon },
+    { path: '/analytics', label: 'Analytics & Reports', icon: Chart01Icon },
+    { path: '/settings', label: 'Account & Settings', icon: Settings01Icon },
+  ];
+
+  return (
+    <aside className="sidebar">
+      <nav className="sidebar-nav">
+        {menuItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`sidebar-link ${isActive ? 'active' : ''}`}
+            >
+              <span className="sidebar-icon">
+                <HugeiconsIcon icon={item.icon} size={20} />
+              </span>
+              <span className="sidebar-label">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+      <div className="sidebar-footer">
+        <button className="sidebar-logout-button" onClick={handleLogout}>
+          <span className="sidebar-icon">
+            <HugeiconsIcon icon={Logout01Icon} size={20} />
+          </span>
+          <span className="sidebar-label">Logout</span>
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+export default Sidebar;

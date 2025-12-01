@@ -1,0 +1,11 @@
+.product-orders-chart {
+  width: 100%;
+}
+
+.chart-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0 0 24px 0;
+  font-family: 'DM Sans', sans-serif;
+}
