@@ -371,7 +371,7 @@ const Products = () => {
           <table className="products-table">
             <thead>
               <tr>
-                <th>Product</th>
+                <th>Product Name</th>
                 <th>Category</th>
                 <th>Performance</th>
                 <th>Stock</th>
@@ -388,16 +388,16 @@ const Products = () => {
                       <div className="product-icon-wrapper">
                         <HiCube className="product-icon" />
                       </div>
-                      <span className="product-table-name">{product.name}</span>
+                      <span className="product-table-name">{product.productName}</span>
                     </div>
                   </td>
                     <td>
                       <span
                         className="product-category-badge"
-                        style={getCategoryStyle(product.category)}
+                        style={getCategoryStyle(product.productType)}
                       >
                         <span className="product-category-dot" />
-                        {product.category || 'Uncategorized'}
+                        {product.productType || 'Uncategorized'}
                       </span>
                     </td>
                   <td>
@@ -409,14 +409,14 @@ const Products = () => {
                           color: getPerformanceColor(product.performanceColor)
                         }}
                       >
-                        {product.performance}
+                        {product.brand}
                       </span>
                     </div>
                   </td>
                   <td>
                     <div className="stock-cell">
                       <FaBox className="stock-icon" />
-                      <span>{product.stock}</span>
+                      <span>{product.manufacturer}</span>
                     </div>
                   </td>
                   <td>

@@ -5,13 +5,14 @@ import apiClient from './apiClient';
  * Handles all product-related API calls
  * Base URL: https://kulobalhealth-backend-qlhm.onrender.com/api/v1/admin
  * Endpoint: /product
- * Full URL: https://kulobalhealth-backend-qlhm.onrender.com/api/v1/admin/product
+ * Full URL: https://kulobalhealth-backend-qlhm.onrender.com/api/v1/admin/product/all
  */
 
 // Get all products (with optional query parameters)
 export const getProducts = async (params = {}) => {
   try {
-    const response = await apiClient.get('/product', { params });
+    const response = await apiClient.get('/product/all', { params });
+    console.log('Get Products Response:', response.data);
     return response.data;
   } catch (error) {
     throw error;

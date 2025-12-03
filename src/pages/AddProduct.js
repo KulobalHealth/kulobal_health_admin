@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiArrowLeft, HiPlus } from 'react-icons/hi2';
 import './AddProduct.css';
@@ -27,7 +27,9 @@ const AddProduct = () => {
     { value: 'wellness', label: 'Wellness Products' },
     { value: 'other', label: 'Other' },
   ];
-  const [images, setImages] = useState([null, null, null, null, null]);
+  const [images, setImages] = useState([]); // { file, preview, name }
+  const imagesRef = useRef(new Set()); // track created object URLs for cleanup
+  const MAX_IMAGES = 5;
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -38,14 +40,51 @@ const AddProduct = () => {
     });
   };
 
-  const handleImageChange = (index, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const newImages = [...images];
-      newImages[index] = URL.createObjectURL(file);
-      setImages(newImages);
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    // only accept image files
+    const imageFiles = files.filter((f) => f.type && f.type.startsWith('image/'));
+    if (imageFiles.length === 0) return;
+
+    const allowed = Math.max(0, MAX_IMAGES - images.length);
+    const toAdd = imageFiles.slice(0, allowed);
+    if (toAdd.length === 0) {
+      window.alert(`Maximum of ${MAX_IMAGES} images allowed`);
+      e.target.value = '';
+      return;
     }
+
+    const newImages = toAdd.map((file) => {
+      const preview = URL.createObjectURL(file);
+      imagesRef.current.add(preview);
+      return { file, preview, name: file.name };
+    });
+
+    setImages((prev) => [...prev, ...newImages]);
+    e.target.value = '';
   };
+
+  const removeImage = (index) => {
+    setImages((prev) => {
+      const next = [...prev];
+      const removed = next.splice(index, 1);
+      // revoke object URL to free memory and remove from ref
+      if (removed[0]?.preview) {
+        URL.revokeObjectURL(removed[0].preview);
+        imagesRef.current.delete(removed[0].preview);
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    return () => {
+      // revoke all previews on unmount
+      imagesRef.current.forEach((url) => URL.revokeObjectURL(url));
+      imagesRef.current.clear();
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -91,51 +130,62 @@ const AddProduct = () => {
 
           {/* Product Images */}
           <div className="form-group">
-            <label className="form-label">
-              Product Images <span className="required">*</span>
-            </label>
-            <div className="image-upload-grid">
-              {images.map((image, index) => (
-                <div key={index} className="image-upload-box">
-                  {image ? (
-                    <div className="image-preview">
-                      <img src={image} alt={`Preview ${index + 1}`} />
-                      <button
-                        type="button"
-                        className="remove-image-button"
-                        onClick={() => {
-                          const newImages = [...images];
-                          newImages[index] = null;
-                          setImages(newImages);
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="image-upload-label">
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg"
-                        onChange={(e) => handleImageChange(index, e)}
-                        className="image-upload-input"
-                      />
-                      <div className="image-upload-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                          <path
-                            d="M12 4V20M4 12H20"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      </div>
-                      <span className="image-upload-text">Click to upload</span>
-                      <span className="image-upload-hint">PNG or JPG</span>
-                    </label>
-                  )}
+            <div className="image-upload-header">
+              <label className="form-label">
+                Product Images <span className="required">*</span>
+              </label>
+              <div className="image-count">
+                {images.length}/{MAX_IMAGES}
+              </div>
+            </div>
+            <div className="single-image-upload">
+              <label className="image-upload-label">
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  multiple
+                  onChange={handleImageChange}
+                  className="image-upload-input"
+                />
+                <div className="image-upload-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 4V20M4 12H20"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
                 </div>
-              ))}
+                <span className="image-upload-text">Upload</span>
+                <span className="image-upload-hint">PNG or JPG</span>
+              </label>
+
+              {images.length > 0 ? (
+                <div className="image-preview-grid">
+                  {images.map((img, index) => (
+                    <div key={index} className="image-preview-box">
+                      <div className="image-preview">
+                        <img
+                          src={img.preview}
+                          alt={img.name ? `Product image ${index + 1} - ${img.name}` : `Product image ${index + 1}`}
+                        />
+                        <button
+                          type="button"
+                          className="remove-image-button"
+                          aria-label={`Remove image ${index + 1}`}
+                          onClick={() => removeImage(index)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div className="image-caption" title={img.name}>{img.name}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="image-placeholder">No images selected</div>
+              )}
             </div>
           </div>
 
