@@ -2,7 +2,7 @@ import React from 'react';
 import { HiXMark } from 'react-icons/hi2';
 import './OrderDetails.css';
 
-const OrderDetails = ({ order, onClose, onConfirmOrder, loading = false, error = null }) => {
+const OrderDetails = ({ order, onClose, onConfirmOrder, onUpdateStatus, loading = false, error = null }) => {
   if (!order) return null;
 
   const getStatusDotColor = (color) => {
@@ -45,37 +45,48 @@ const OrderDetails = ({ order, onClose, onConfirmOrder, loading = false, error =
   // Extract order details from fetched data or fallback to normalized data
   const fetchedData = order.fetchedDetails || order.originalOrder || order;
   
-  // Get order ID
-  const orderId = order.id || fetchedData.id || fetchedData.orderId || fetchedData._id || 'N/A';
+  // Get order ID - handle the API response structure
+  const orderId = fetchedData.orderId || order.id || fetchedData.id || fetchedData._id || 'N/A';
   const orderNo = typeof orderId === 'string' && orderId.startsWith('#') ? orderId : `#${orderId}`;
 
-  // Extract product information
-  const productName = order.productName || fetchedData.productName || fetchedData.product?.name || 'N/A';
-  const quantity = fetchedData.quantity || fetchedData.qty || fetchedData.items?.length || 1;
-
-  // Extract date
-  const dateOrdered = formatDate(order.orderDate || fetchedData.orderDate || fetchedData.createdAt || fetchedData.date);
-
-  // Extract amount information
-  const totalAmount = formatCurrency(order.amount || fetchedData.amount || fetchedData.total || fetchedData.totalAmount || 0);
-  const paymentType = order.paymentStatus || fetchedData.paymentStatus || fetchedData.payment?.status || 'Full Payment';
-  const initialAmountPaid = formatCurrency(fetchedData.initialAmountPaid || fetchedData.amountPaid || fetchedData.paidAmount || 0);
-  const remainingAmount = formatCurrency(fetchedData.remainingAmount || fetchedData.balance || 
-    (parseFloat(String(totalAmount).replace(/,/g, '')) - parseFloat(String(initialAmountPaid).replace(/,/g, ''))) || 0);
-
+  // Extract order information from API response
+  const totalCost = fetchedData.totalCost || order.amount || fetchedData.amount || fetchedData.total || fetchedData.totalAmount || 0;
+  const paid = fetchedData.paid !== undefined ? fetchedData.paid : (order.paymentStatus === 'Full Payment');
+  const orderStatus = fetchedData.status || order.status || fetchedData.orderStatus || 'PENDING';
+  const paymentType = fetchedData.paymentType || order.paymentStatus || fetchedData.payment?.status || 'FULL_PAYMENT';
+  const deliveryMethod = fetchedData.deliveryMethod || 'STANDARD';
+  const numberOfItems = fetchedData.numberOfItems || fetchedData.products?.length || 0;
+  const dateOrdered = formatDate(fetchedData.dateOrdered || order.orderDate || fetchedData.orderDate || fetchedData.createdAt || fetchedData.date);
+  
+  // Extract products array
+  const products = fetchedData.products || [];
+  
   // Extract pharmacy information
+  const pharmacyId = fetchedData.pharmacyId || order.pharmacyId || 'N/A';
   const pharmacyName = order.pharmacyName || fetchedData.pharmacyName || fetchedData.pharmacy?.name || 'N/A';
   const address = fetchedData.address || fetchedData.pharmacy?.address || fetchedData.deliveryAddress?.address || order.location || 'N/A';
   const street = fetchedData.street || fetchedData.pharmacy?.street || fetchedData.deliveryAddress?.street || '';
   const city = fetchedData.city || fetchedData.pharmacy?.city || fetchedData.deliveryAddress?.city || order.location || 'N/A';
   const contact = fetchedData.contact || fetchedData.phoneNumber || fetchedData.pharmacy?.phoneNumber || fetchedData.pharmacy?.contact || 'N/A';
 
-  const orderStatus = order.status || fetchedData.status || fetchedData.orderStatus || 'New Order';
+  // Calculate payment information
+  const totalAmount = formatCurrency(totalCost);
+  const amountPaid = paid ? totalCost : 0;
+  const remainingAmount = formatCurrency(totalCost - amountPaid);
+
+  // Status color mapping
   const orderStatusColor = order.statusColor || 
-    (orderStatus === 'Delivered' ? 'green' :
-     orderStatus === 'In Transit' ? 'blue' :
-     orderStatus === 'Confirmed' ? 'yellow' :
-     orderStatus === 'Cancelled' ? 'red' : 'grey');
+    (orderStatus === 'DELIVERED' || orderStatus === 'Delivered' ? 'green' :
+     orderStatus === 'SHIPPED' || orderStatus === 'Shipped' ? 'blue' :
+     orderStatus === 'PROCESSING' || orderStatus === 'Processing' ? 'yellow' :
+     orderStatus === 'CANCELLED' || orderStatus === 'Cancelled' ? 'red' :
+     orderStatus === 'PENDING' || orderStatus === 'Pending' ? 'orange' : 'grey');
+
+  // Format payment type
+  const formatPaymentType = (type) => {
+    if (!type) return 'N/A';
+    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
 
   return (
     <div className="order-details-overlay" onClick={onClose}>
@@ -111,98 +122,177 @@ const OrderDetails = ({ order, onClose, onConfirmOrder, loading = false, error =
 
         {/* Order Details Content */}
         {!loading && (
-          <>
-
-        {/* Status and Confirm Button */}
-        <div className="order-details-status-bar">
-          <div className="status-section">
-            <span className="status-label">Order Status</span>
-            <div
-              className="order-status-badge"
-              style={{ color: getStatusDotColor(orderStatusColor) }}
-            >
-              <span
-                className="status-dot"
-                style={{ backgroundColor: getStatusDotColor(orderStatusColor) }}
-              />
-              {orderStatus}
+          <div className="order-details-content">
+            {/* Status and Confirm Button */}
+            <div className="order-details-status-bar">
+              <div className="status-section">
+                <span className="status-label">Order Status</span>
+                <div
+                  className="order-status-badge"
+                  style={{ color: getStatusDotColor(orderStatusColor) }}
+                >
+                  <span
+                    className="status-dot"
+                    style={{ backgroundColor: getStatusDotColor(orderStatusColor) }}
+                  />
+                  {orderStatus}
+                </div>
+              </div>
+              {/* Action Buttons based on Status */}
+              {(orderStatus === 'PENDING' || orderStatus === 'Pending' || orderStatus === 'New Order') && (
+                <button 
+                  className="confirm-order-button" 
+                  onClick={() => onUpdateStatus && onUpdateStatus(orderId, 'PROCESSING')}
+                >
+                  Confirm Order
+                </button>
+              )}
+              {(orderStatus === 'PROCESSING' || orderStatus === 'Processing') && (
+                <button 
+                  className="confirm-order-button" 
+                  onClick={() => onUpdateStatus && onUpdateStatus(orderId, 'SHIPPED')}
+                >
+                  Mark as Shipped
+                </button>
+              )}
+              {(orderStatus === 'SHIPPED' || orderStatus === 'Shipped') && (
+                <button 
+                  className="confirm-order-button" 
+                  onClick={() => onUpdateStatus && onUpdateStatus(orderId, 'DELIVERED')}
+                >
+                  Confirm Delivered
+                </button>
+              )}
             </div>
-          </div>
-          {orderStatus === 'New Order' && (
-            <button className="confirm-order-button" onClick={onConfirmOrder}>
-              Confirm Order
-            </button>
-          )}
-        </div>
 
-        {/* Order Summary */}
-        <div className="order-details-section">
-          <h3 className="section-title">Order Summary</h3>
-          <div className="order-summary">
-            <div className="product-image">
-              <div className="product-image-placeholder">
-                <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-                  <rect width="60" height="60" rx="8" fill="#3b82f6" opacity="0.1" />
-                  <rect x="15" y="15" width="30" height="30" rx="4" fill="#3b82f6" />
-                </svg>
+            {/* Main Content Grid */}
+            <div className="order-details-grid">
+              {/* Left Column */}
+              <div className="order-details-left">
+                {/* Order Information */}
+                <div className="order-details-section">
+                  <h3 className="section-title">Order Information</h3>
+                  <div className="order-info-list">
+                    <div className="info-item">
+                      <span className="info-label">Order ID:</span>
+                      <span className="info-value">{orderNo}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Pharmacy ID:</span>
+                      <span className="info-value">{pharmacyId}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Date Ordered:</span>
+                      <span className="info-value">{dateOrdered}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Number of Items:</span>
+                      <span className="info-value">{numberOfItems}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Delivery Method:</span>
+                      <span className="info-value">{deliveryMethod.replace(/_/g, ' ')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Information */}
+                <div className="order-details-section">
+                  <h3 className="section-title">Payment Information</h3>
+                  <div className="order-info-list">
+                    <div className="info-item">
+                      <span className="info-label">Total Cost (GHC):</span>
+                      <span className="info-value">{totalAmount}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Payment Type:</span>
+                      <span className="info-value">{formatPaymentType(paymentType)}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Payment Status:</span>
+                      <span className="info-value">
+                        <span
+                          className={`payment-status-badge ${paid ? 'paid' : 'unpaid'}`}
+                        >
+                          {paid ? 'Paid' : 'Unpaid'}
+                        </span>
+                      </span>
+                    </div>
+                    {!paid && (
+                      <div className="info-item">
+                        <span className="info-label">Amount Due (GHC):</span>
+                        <span className="info-value">{remainingAmount}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Delivery Address */}
+                <div className="order-details-section">
+                  <h3 className="section-title">Delivery Address</h3>
+                  <div className="delivery-address">
+                    <div className="address-line">{pharmacyName}</div>
+                    {address && address !== 'N/A' && <div className="address-line">{address}</div>}
+                    {street && <div className="address-line">{street}</div>}
+                    {city && city !== 'N/A' && <div className="address-line">{city}</div>}
+                    {contact && contact !== 'N/A' && <div className="address-line">{contact}</div>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Products */}
+              <div className="order-details-right">
+                <div className="order-details-section">
+                  <h3 className="section-title">Products ({products.length})</h3>
+                  {products.length > 0 ? (
+                    <div className="products-table-container">
+                      <table className="products-table">
+                        <thead>
+                          <tr>
+                            <th>Product Name</th>
+                            <th>Type</th>
+                            <th>Brand</th>
+                            <th>Manufacturer</th>
+                            <th>Price (GHC)</th>
+                            <th>Qty</th>
+                            <th>Total (GHC)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {products.map((product, index) => (
+                            <tr key={product.productId || index}>
+                              <td>
+                                <div className="product-name-cell">
+                                  <div className="product-name-main">{product.productName || 'N/A'}</div>
+                                  {product.description && (
+                                    <div className="product-description">{product.description}</div>
+                                  )}
+                                </div>
+                              </td>
+                              <td>{product.productType || product.productTypeCode || 'N/A'}</td>
+                              <td>{product.brand || 'N/A'}</td>
+                              <td>{product.manufacturer || 'N/A'}</td>
+                              <td>{formatCurrency(product.price || 0)}</td>
+                              <td>{product.quantity || 0}</td>
+                              <td className="product-total">{formatCurrency((product.price || 0) * (product.quantity || 0))}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="products-total-row">
+                            <td colSpan="6" className="products-total-label">Grand Total:</td>
+                            <td className="products-total-value">{totalAmount}</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="no-products">No products found in this order.</div>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="product-info">
-              <div className="order-number">Order No.: {orderNo}</div>
-              <div className="product-name-large">{productName}</div>
-              <div className="product-quantity">Qty: {quantity}</div>
-            </div>
           </div>
-        </div>
-
-        {/* Order Information */}
-        <div className="order-details-section">
-          <h3 className="section-title">Order Information</h3>
-          <div className="order-info-list">
-            <div className="info-item">
-              <span className="info-label">Date Ordered:</span>
-              <span className="info-value">{dateOrdered}</span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Total Amount (GHC):</span>
-              <span className="info-value">{totalAmount}</span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Payment Type:</span>
-              <span
-                className="info-value payment-type"
-                style={{ color: getStatusDotColor(order.paymentStatusColor || 'grey') }}
-              >
-                <span
-                  className="status-dot"
-                  style={{ backgroundColor: getStatusDotColor(order.paymentStatusColor || 'grey') }}
-                />
-                {paymentType}
-              </span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Initial Amount Paid (GHC):</span>
-              <span className="info-value">{initialAmountPaid}</span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Remaining Amount (GHC):</span>
-              <span className="info-value">{remainingAmount}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Delivery Address */}
-        <div className="order-details-section">
-          <h3 className="section-title">Delivery Address</h3>
-          <div className="delivery-address">
-            <div className="address-line">{pharmacyName}</div>
-            {address && address !== 'N/A' && <div className="address-line">{address}</div>}
-            {street && <div className="address-line">{street}</div>}
-            {city && city !== 'N/A' && <div className="address-line">{city}</div>}
-            {contact && contact !== 'N/A' && <div className="address-line">{contact}</div>}
-          </div>
-        </div>
-          </>
         )}
       </div>
     </div>

@@ -22,10 +22,67 @@ export const getOrders = async (params = {}) => {
 // Get single order by ID
 export const getOrderById = async (id) => {
   try {
-    const response = await apiClient.get(`/order/${id}`);
-    console.log('Get Order By ID Response:', response.data);
-    return response.data;
+    // Use the same /orders endpoint - fetch all and filter client-side
+    // The backend might not support filtering by orderId, so we get all orders
+    const response = await apiClient.get('/orders');
+    console.log('Get Order By ID - Full Response:', response);
+    console.log('Looking for order with ID:', id);
+    
+    // The response might be an array, so we need to find the order with matching ID
+    let ordersData = response.data;
+    
+    // Handle different response structures to extract the orders array
+    if (Array.isArray(ordersData)) {
+      // Already an array
+    } else if (ordersData && typeof ordersData === 'object') {
+      // Check if it's wrapped in data property
+      if (ordersData.data && Array.isArray(ordersData.data)) {
+        ordersData = ordersData.data;
+      } else if (ordersData.orders && Array.isArray(ordersData.orders)) {
+        ordersData = ordersData.orders;
+      } else if (ordersData.orderData && Array.isArray(ordersData.orderData)) {
+        ordersData = ordersData.orderData;
+      } else {
+        // Try to find if it's a single order object
+        if (ordersData.orderId === id || ordersData.id === id || ordersData._id === id) {
+          console.log('Found single order object:', ordersData);
+          return ordersData;
+        }
+        // If not, try to convert to array
+        ordersData = [ordersData];
+      }
+    } else {
+      ordersData = [];
+    }
+    
+    console.log('Orders array length:', ordersData.length);
+    console.log('Sample order structure:', ordersData[0]);
+    
+    // Find the order with matching ID (try multiple ID fields)
+    const foundOrder = ordersData.find(order => {
+      const orderIdMatch = order.orderId === id || 
+                          order.id === id || 
+                          order._id === id ||
+                          String(order.orderId) === String(id) ||
+                          String(order.id) === String(id) ||
+                          String(order._id) === String(id);
+      
+      if (orderIdMatch) {
+        console.log('Found matching order:', order);
+      }
+      
+      return orderIdMatch;
+    });
+    
+    if (foundOrder) {
+      console.log('Returning found order:', foundOrder);
+      return foundOrder;
+    } else {
+      console.warn('Order not found. Available order IDs:', ordersData.map(o => o.orderId || o.id || o._id));
+      return null;
+    }
   } catch (error) {
+    console.error('Error in getOrderById:', error);
     throw error;
   }
 };
@@ -60,12 +117,27 @@ export const deleteOrder = async (id) => {
   }
 };
 
-// Update order status
-export const updateOrderStatus = async (id, status) => {
+// Update order status (process order)
+export const updateOrderStatus = async (orderId, pharmacyId) => {
   try {
-    const response = await apiClient.patch(`/orders/${id}/status`, { status });
+    // Remove # prefix if present
+    let cleanOrderId = orderId;
+    if (typeof cleanOrderId === 'string' && cleanOrderId.startsWith('#')) {
+      cleanOrderId = cleanOrderId.substring(1);
+    }
+    
+    console.log('Processing order (calling /orders/proccess-order):', { orderId: cleanOrderId, pharmacyId });
+
+    // Call the endpoint `/orders/proccess-order` (note spelling from backend)
+    // The backend expects a PATCH request for processing an order
+    const response = await apiClient.patch('/orders/proccess-order', {
+      pharmacyId: pharmacyId,
+      orderId: cleanOrderId
+    });
+    console.log('Process Order Response:', response.data);
     return response.data;
   } catch (error) {
+    console.error('Error processing order:', error);
     throw error;
   }
 };

@@ -9,7 +9,8 @@ import {
   HiXMark
 } from 'react-icons/hi2';
 import { FaShoppingBag } from 'react-icons/fa';
-import { getOrders, getOrderById } from '../utils/ordersService';
+import { getOrders, getOrderById, updateOrderStatus } from '../utils/ordersService';
+import { toast } from 'react-toastify';
 import OrderDetails from '../components/Orders/OrderDetails';
 import './Orders.css';
 
@@ -98,12 +99,13 @@ const Orders = () => {
          order.paymentStatus === 'Partial Payment' ? 'yellow' : 'green'),
       orderDate: order.orderDate || order.createdAt || order.date || new Date().toLocaleDateString(),
       location: location,
-      status: order.status || order.orderStatus || 'New Order',
+      status: order.status || order.orderStatus || 'PENDING',
       statusColor: order.statusColor || 
-        (order.status === 'Delivered' ? 'green' :
-         order.status === 'In Transit' ? 'blue' :
-         order.status === 'Confirmed' ? 'yellow' :
-         order.status === 'Cancelled' ? 'red' : 'grey'),
+        (order.status === 'DELIVERED' || order.status === 'Delivered' ? 'green' :
+         order.status === 'SHIPPED' || order.status === 'Shipped' ? 'blue' :
+         order.status === 'PROCESSING' || order.status === 'Processing' ? 'yellow' :
+         order.status === 'PENDING' || order.status === 'Pending' ? 'orange' :
+         order.status === 'CANCELLED' || order.status === 'Cancelled' ? 'red' : 'grey'),
       // Include original order data for details view (but don't let it overwrite normalized values)
       originalOrder: order
     };
@@ -270,11 +272,10 @@ const Orders = () => {
   // Status tabs configuration
   const statusTabs = [
     { id: 'All', label: 'All Orders' },
-    { id: 'Delivered', label: 'Delivered' },
-    { id: 'New Order', label: 'New Orders' },
-    { id: 'In Transit', label: 'In Transit' },
-    { id: 'Confirmed', label: 'Confirmed' },
-    { id: 'Cancelled', label: 'Cancelled' },
+    { id: 'PENDING', label: 'Pending' },
+    { id: 'PROCESSING', label: 'Processing' },
+    { id: 'SHIPPED', label: 'Shipped' },
+    { id: 'DELIVERED', label: 'Delivered' },
   ];
 
   // Calculate counts for each status
@@ -495,11 +496,112 @@ const Orders = () => {
     setOrderDetailsError(null);
   };
 
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    try {
+      setOrderDetailsLoading(true);
+      setOrderDetailsError(null);
+      
+      // Get pharmacyId from the selected order
+      const pharmacyId = selectedOrder?.originalOrder?.pharmacyId || 
+                        selectedOrder?.fetchedDetails?.pharmacyId || 
+                        selectedOrder?.pharmacyId;
+      
+      if (!pharmacyId) {
+        throw new Error('Pharmacy ID not found. Please ensure the order has a pharmacy ID.');
+      }
+      
+      console.log('Processing order:', { orderId, pharmacyId, newStatus });
+      
+      // Update order status via API using process-order endpoint
+      await updateOrderStatus(orderId, pharmacyId);
+      
+      // Show success message
+      const statusMessages = {
+        'PROCESSING': 'Order confirmed and moved to processing',
+        'SHIPPED': 'Order marked as shipped',
+        'DELIVERED': 'Order confirmed as delivered'
+      };
+      toast.success(statusMessages[newStatus] || 'Order status updated successfully');
+      
+      // Update the order in the local orders list
+      setOrders(prevOrders => 
+        prevOrders.map(order => {
+          const orderIdToMatch = order.originalOrder?.orderId || order.id || order.orderId || order._id;
+          let currentOrderId = orderId;
+          if (typeof orderId === 'string' && orderId.startsWith('#')) {
+            currentOrderId = orderId.substring(1);
+          }
+          
+          if (String(orderIdToMatch) === String(currentOrderId)) {
+            // Update the order status
+            const updatedOrder = {
+              ...order,
+              status: newStatus,
+              statusColor: newStatus === 'DELIVERED' ? 'green' :
+                          newStatus === 'SHIPPED' ? 'blue' :
+                          newStatus === 'PROCESSING' ? 'yellow' :
+                          newStatus === 'PENDING' ? 'orange' : 'grey',
+              originalOrder: {
+                ...order.originalOrder,
+                status: newStatus
+              },
+              fetchedDetails: {
+                ...order.fetchedDetails,
+                status: newStatus
+              }
+            };
+            return updatedOrder;
+          }
+          return order;
+        })
+      );
+      
+      // Update the selected order if it's currently open
+      if (selectedOrder) {
+        const selectedOrderId = selectedOrder.originalOrder?.orderId || selectedOrder.id || selectedOrder.orderId || selectedOrder._id;
+        let currentOrderId = orderId;
+        if (typeof orderId === 'string' && orderId.startsWith('#')) {
+          currentOrderId = orderId.substring(1);
+        }
+        
+        if (String(selectedOrderId) === String(currentOrderId)) {
+          setSelectedOrder(prev => ({
+            ...prev,
+            status: newStatus,
+            statusColor: newStatus === 'DELIVERED' ? 'green' :
+                        newStatus === 'SHIPPED' ? 'blue' :
+                        newStatus === 'PROCESSING' ? 'yellow' :
+                        newStatus === 'PENDING' ? 'orange' : 'grey',
+            originalOrder: {
+              ...prev.originalOrder,
+              status: newStatus
+            },
+            fetchedDetails: {
+              ...prev.fetchedDetails,
+              status: newStatus
+            }
+          }));
+        }
+      }
+      
+      // Refresh orders list to get updated data
+      await handleRefresh();
+      
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      toast.error(err.message || 'Failed to update order status');
+      setOrderDetailsError(err.message || 'Failed to update order status');
+    } finally {
+      setOrderDetailsLoading(false);
+    }
+  };
+
   const handleConfirmOrder = () => {
-    // TODO: Implement confirm order functionality
-    console.log('Confirming order:', selectedOrder);
-    // You can update the order status here
-    setSelectedOrder(null);
+    // This is now handled by handleUpdateOrderStatus
+    if (selectedOrder) {
+      const orderId = selectedOrder.originalOrder?.orderId || selectedOrder.id || selectedOrder.orderId || selectedOrder._id;
+      handleUpdateOrderStatus(orderId, 'PROCESSING');
+    }
   };
 
   const handleRefresh = async () => {
@@ -892,6 +994,7 @@ const Orders = () => {
           order={selectedOrder}
           onClose={handleCloseDetails}
           onConfirmOrder={handleConfirmOrder}
+          onUpdateStatus={handleUpdateOrderStatus}
           loading={orderDetailsLoading}
           error={orderDetailsError}
         />
