@@ -3,12 +3,16 @@ import apiClient from './apiClient';
 /**
  * Orders Service
  * Handles all order-related API calls
+ * Base URL: https://kulobalhealth-backend-qlhm.onrender.com/api/v1/admin
+ * Endpoint: /orders
+ * Full URL: https://kulobalhealth-backend-qlhm.onrender.com/api/v1/admin/orders
  */
 
 // Get all orders (with optional query parameters)
 export const getOrders = async (params = {}) => {
   try {
     const response = await apiClient.get('/orders', { params });
+    console.log('Get Orders Response:', response.data);
     return response.data;
   } catch (error) {
     throw error;
@@ -18,7 +22,8 @@ export const getOrders = async (params = {}) => {
 // Get single order by ID
 export const getOrderById = async (id) => {
   try {
-    const response = await apiClient.get(`/orders/${id}`);
+    const response = await apiClient.get(`/order/${id}`);
+    console.log('Get Order By ID Response:', response.data);
     return response.data;
   } catch (error) {
     throw error;

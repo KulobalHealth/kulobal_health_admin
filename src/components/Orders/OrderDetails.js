@@ -2,7 +2,7 @@ import React from 'react';
 import { HiXMark } from 'react-icons/hi2';
 import './OrderDetails.css';
 
-const OrderDetails = ({ order, onClose, onConfirmOrder }) => {
+const OrderDetails = ({ order, onClose, onConfirmOrder, loading = false, error = null }) => {
   if (!order) return null;
 
   const getStatusDotColor = (color) => {
@@ -17,25 +17,65 @@ const OrderDetails = ({ order, onClose, onConfirmOrder }) => {
     return colors[color] || colors.grey;
   };
 
-  // Sample order details data - in real app, this would come from the order object
-  const orderDetails = {
-    orderNo: '#24432',
-    productName: order.productName || 'Malaria Test Kit',
-    quantity: 4,
-    dateOrdered: 'Mon 3 Apr, 2025',
-    totalAmount: '23,400.00',
-    paymentType: order.paymentStatus || 'Credit',
-    initialAmountPaid: '400.00',
-    remainingAmount: '23,000.00',
-    pharmacyName: order.pharmacyName || 'Humble Pharmacy',
-    address: 'GM-071-8258',
-    street: 'Location Streets',
-    city: 'Accra, Ghana',
-    contact: '233540977343',
+  // Helper to format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString;
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        day: 'numeric', 
+        month: 'short', 
+        year: 'numeric' 
+      });
+    } catch (e) {
+      return dateString;
+    }
   };
 
-  const orderStatus = order.status || 'New Order';
-  const orderStatusColor = order.statusColor || 'grey';
+  // Helper to format currency
+  const formatCurrency = (amount) => {
+    if (!amount && amount !== 0) return '0.00';
+    const num = typeof amount === 'string' ? parseFloat(amount.replace(/[^0-9.]/g, '')) : amount;
+    if (isNaN(num)) return '0.00';
+    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  // Extract order details from fetched data or fallback to normalized data
+  const fetchedData = order.fetchedDetails || order.originalOrder || order;
+  
+  // Get order ID
+  const orderId = order.id || fetchedData.id || fetchedData.orderId || fetchedData._id || 'N/A';
+  const orderNo = typeof orderId === 'string' && orderId.startsWith('#') ? orderId : `#${orderId}`;
+
+  // Extract product information
+  const productName = order.productName || fetchedData.productName || fetchedData.product?.name || 'N/A';
+  const quantity = fetchedData.quantity || fetchedData.qty || fetchedData.items?.length || 1;
+
+  // Extract date
+  const dateOrdered = formatDate(order.orderDate || fetchedData.orderDate || fetchedData.createdAt || fetchedData.date);
+
+  // Extract amount information
+  const totalAmount = formatCurrency(order.amount || fetchedData.amount || fetchedData.total || fetchedData.totalAmount || 0);
+  const paymentType = order.paymentStatus || fetchedData.paymentStatus || fetchedData.payment?.status || 'Full Payment';
+  const initialAmountPaid = formatCurrency(fetchedData.initialAmountPaid || fetchedData.amountPaid || fetchedData.paidAmount || 0);
+  const remainingAmount = formatCurrency(fetchedData.remainingAmount || fetchedData.balance || 
+    (parseFloat(String(totalAmount).replace(/,/g, '')) - parseFloat(String(initialAmountPaid).replace(/,/g, ''))) || 0);
+
+  // Extract pharmacy information
+  const pharmacyName = order.pharmacyName || fetchedData.pharmacyName || fetchedData.pharmacy?.name || 'N/A';
+  const address = fetchedData.address || fetchedData.pharmacy?.address || fetchedData.deliveryAddress?.address || order.location || 'N/A';
+  const street = fetchedData.street || fetchedData.pharmacy?.street || fetchedData.deliveryAddress?.street || '';
+  const city = fetchedData.city || fetchedData.pharmacy?.city || fetchedData.deliveryAddress?.city || order.location || 'N/A';
+  const contact = fetchedData.contact || fetchedData.phoneNumber || fetchedData.pharmacy?.phoneNumber || fetchedData.pharmacy?.contact || 'N/A';
+
+  const orderStatus = order.status || fetchedData.status || fetchedData.orderStatus || 'New Order';
+  const orderStatusColor = order.statusColor || 
+    (orderStatus === 'Delivered' ? 'green' :
+     orderStatus === 'In Transit' ? 'blue' :
+     orderStatus === 'Confirmed' ? 'yellow' :
+     orderStatus === 'Cancelled' ? 'red' : 'grey');
 
   return (
     <div className="order-details-overlay" onClick={onClose}>
@@ -47,6 +87,31 @@ const OrderDetails = ({ order, onClose, onConfirmOrder }) => {
             <HiXMark />
           </button>
         </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div style={{ padding: '40px', textAlign: 'center' }}>
+            <p>Loading order details...</p>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && !loading && (
+          <div style={{ 
+            padding: '12px 16px', 
+            backgroundColor: '#fee2e2', 
+            color: '#dc2626', 
+            borderRadius: '8px', 
+            margin: '16px',
+            fontSize: '14px'
+          }}>
+            {error}
+          </div>
+        )}
+
+        {/* Order Details Content */}
+        {!loading && (
+          <>
 
         {/* Status and Confirm Button */}
         <div className="order-details-status-bar">
@@ -83,9 +148,9 @@ const OrderDetails = ({ order, onClose, onConfirmOrder }) => {
               </div>
             </div>
             <div className="product-info">
-              <div className="order-number">Order No.: {orderDetails.orderNo}</div>
-              <div className="product-name-large">{orderDetails.productName}</div>
-              <div className="product-quantity">Qty: {orderDetails.quantity}</div>
+              <div className="order-number">Order No.: {orderNo}</div>
+              <div className="product-name-large">{productName}</div>
+              <div className="product-quantity">Qty: {quantity}</div>
             </div>
           </div>
         </div>
@@ -96,11 +161,11 @@ const OrderDetails = ({ order, onClose, onConfirmOrder }) => {
           <div className="order-info-list">
             <div className="info-item">
               <span className="info-label">Date Ordered:</span>
-              <span className="info-value">{orderDetails.dateOrdered}</span>
+              <span className="info-value">{dateOrdered}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Total Amount (GHC):</span>
-              <span className="info-value">{orderDetails.totalAmount}</span>
+              <span className="info-value">{totalAmount}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Payment Type:</span>
@@ -112,16 +177,16 @@ const OrderDetails = ({ order, onClose, onConfirmOrder }) => {
                   className="status-dot"
                   style={{ backgroundColor: getStatusDotColor(order.paymentStatusColor || 'grey') }}
                 />
-                {orderDetails.paymentType}
+                {paymentType}
               </span>
             </div>
             <div className="info-item">
               <span className="info-label">Initial Amount Paid (GHC):</span>
-              <span className="info-value">{orderDetails.initialAmountPaid}</span>
+              <span className="info-value">{initialAmountPaid}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Remaining Amount (GHC):</span>
-              <span className="info-value">{orderDetails.remainingAmount}</span>
+              <span className="info-value">{remainingAmount}</span>
             </div>
           </div>
         </div>
@@ -130,13 +195,15 @@ const OrderDetails = ({ order, onClose, onConfirmOrder }) => {
         <div className="order-details-section">
           <h3 className="section-title">Delivery Address</h3>
           <div className="delivery-address">
-            <div className="address-line">{orderDetails.pharmacyName}</div>
-            <div className="address-line">{orderDetails.address}</div>
-            <div className="address-line">{orderDetails.street}</div>
-            <div className="address-line">{orderDetails.city}</div>
-            <div className="address-line">{orderDetails.contact}</div>
+            <div className="address-line">{pharmacyName}</div>
+            {address && address !== 'N/A' && <div className="address-line">{address}</div>}
+            {street && <div className="address-line">{street}</div>}
+            {city && city !== 'N/A' && <div className="address-line">{city}</div>}
+            {contact && contact !== 'N/A' && <div className="address-line">{contact}</div>}
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

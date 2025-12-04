@@ -9,7 +9,7 @@ import {
   HiXMark
 } from 'react-icons/hi2';
 import { FaShoppingBag } from 'react-icons/fa';
-import { getOrders } from '../utils/ordersService';
+import { getOrders, getOrderById } from '../utils/ordersService';
 import OrderDetails from '../components/Orders/OrderDetails';
 import './Orders.css';
 
@@ -23,6 +23,8 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [orderDetailsLoading, setOrderDetailsLoading] = useState(false);
+  const [orderDetailsError, setOrderDetailsError] = useState(null);
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({
     dateFrom: '',
@@ -36,27 +38,104 @@ const Orders = () => {
 
   // Helper function to normalize order data from API
   const normalizeOrderData = (order) => {
+    // Helper to safely extract string value, ensuring we never return an object
+    const getStringValue = (value, fallback = 'N/A') => {
+      if (typeof value === 'string') return value;
+      if (typeof value === 'number') return String(value);
+      if (value && typeof value === 'object') {
+        // If it's an object, try to get a name or string property
+        return value.name || value.pharmacyName || value.productName || fallback;
+      }
+      return fallback;
+    };
+
+    // Extract pharmacy name safely
+    let pharmacyName = 'N/A';
+    if (order.pharmacyName && typeof order.pharmacyName === 'string') {
+      pharmacyName = order.pharmacyName;
+    } else if (order.pharmacy) {
+      if (typeof order.pharmacy === 'string') {
+        pharmacyName = order.pharmacy;
+      } else if (order.pharmacy.name) {
+        pharmacyName = order.pharmacy.name;
+      } else if (order.pharmacy.pharmacyName) {
+        pharmacyName = order.pharmacy.pharmacyName;
+      }
+    }
+
+    // Extract product name safely
+    let productName = 'N/A';
+    if (order.productName && typeof order.productName === 'string') {
+      productName = order.productName;
+    } else if (order.product) {
+      if (typeof order.product === 'string') {
+        productName = order.product;
+      } else if (order.product.name) {
+        productName = order.product.name;
+      }
+    }
+
+    // Extract location safely
+    let location = 'N/A';
+    if (order.location && typeof order.location === 'string') {
+      location = order.location;
+    } else if (order.pharmacy?.location && typeof order.pharmacy.location === 'string') {
+      location = order.pharmacy.location;
+    } else if (order.address && typeof order.address === 'string') {
+      location = order.address;
+    }
+
     // Map API response to component's expected format
     return {
-      id: order.id || order.orderId || order._id || `#${order.id}`,
-      productName: order.productName || order.product?.name || order.product || 'N/A',
-      pharmacyName: order.pharmacyName || order.pharmacy?.name || order.pharmacy || 'N/A',
+      id: order.id || order.orderId || order._id || `#${order.id || 'N/A'}`,
+      productName: productName,
+      pharmacyName: pharmacyName,
       amount: order.amount || order.total || order.totalAmount || '0.00',
-      paymentStatus: order.paymentStatus || order.payment?.status || 'Full Payment',
+      paymentStatus: getStringValue(order.paymentStatus, 'Full Payment') || 
+        getStringValue(order.payment?.status, 'Full Payment'),
       paymentStatusColor: order.paymentStatusColor || 
         (order.paymentStatus === 'Credit' ? 'orange' : 
          order.paymentStatus === 'Partial Payment' ? 'yellow' : 'green'),
       orderDate: order.orderDate || order.createdAt || order.date || new Date().toLocaleDateString(),
-      location: order.location || order.pharmacy?.location || order.address || 'N/A',
+      location: location,
       status: order.status || order.orderStatus || 'New Order',
       statusColor: order.statusColor || 
         (order.status === 'Delivered' ? 'green' :
          order.status === 'In Transit' ? 'blue' :
          order.status === 'Confirmed' ? 'yellow' :
          order.status === 'Cancelled' ? 'red' : 'grey'),
-      // Include original order data for details view
-      ...order
+      // Include original order data for details view (but don't let it overwrite normalized values)
+      originalOrder: order
     };
+  };
+
+  // Helper function to find array in nested object
+  const findArrayInObject = (obj, depth = 0, maxDepth = 3) => {
+    if (depth > maxDepth) return null;
+    if (!obj || typeof obj !== 'object') return null;
+    
+    // Check if current object is an array
+    if (Array.isArray(obj)) {
+      return obj.length > 0 ? obj : null;
+    }
+    
+    // Check common array property names
+    const arrayKeys = ['orders', 'data', 'results', 'items', 'orderList', 'orderData'];
+    for (const key of arrayKeys) {
+      if (obj[key] && Array.isArray(obj[key]) && obj[key].length > 0) {
+        return obj[key];
+      }
+    }
+    
+    // Recursively search nested objects
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key) && typeof obj[key] === 'object') {
+        const found = findArrayInObject(obj[key], depth + 1, maxDepth);
+        if (found) return found;
+      }
+    }
+    
+    return null;
   };
 
   // Fetch orders from API on component mount
@@ -67,34 +146,97 @@ const Orders = () => {
         setError(null);
         const response = await getOrders();
         
-        console.log('Orders API Response:', response);
-        
-        // Handle different response structures
-        let ordersData = [];
-        if (Array.isArray(response)) {
-          ordersData = response;
-        } else if (response.data && Array.isArray(response.data)) {
-          ordersData = response.data;
-        } else if (response.orders && Array.isArray(response.orders)) {
-          ordersData = response.orders;
-        } else if (response.results && Array.isArray(response.results)) {
-          ordersData = response.results;
+        console.log('=== Orders API Response Debug ===');
+        console.log('Full Response:', JSON.stringify(response, null, 2));
+        console.log('Response Type:', typeof response);
+        console.log('Is Array?', Array.isArray(response));
+        if (response && typeof response === 'object') {
+          console.log('Response Keys:', Object.keys(response));
+          console.log('Response Structure:', response);
         }
         
-        // Normalize order data to match component format
-        const normalizedOrders = ordersData.map(normalizeOrderData);
+        // Handle different response structures - similar to Products.js approach
+        let ordersData = [];
         
-        // Set orders from API (empty array if no orders)
+        // First, try simple fallback approach (like Products.js)
+        if (Array.isArray(response)) {
+          ordersData = response;
+          console.log('✓ Orders found as direct array:', ordersData.length);
+        } else if (response?.data) {
+          if (Array.isArray(response.data)) {
+            ordersData = response.data;
+            console.log('✓ Orders found in response.data:', ordersData.length);
+          } else if (response.data.data && Array.isArray(response.data.data)) {
+            ordersData = response.data.data;
+            console.log('✓ Orders found in response.data.data:', ordersData.length);
+          } else if (response.data.orders && Array.isArray(response.data.orders)) {
+            ordersData = response.data.orders;
+            console.log('✓ Orders found in response.data.orders:', ordersData.length);
+          }
+        } else if (response?.orders && Array.isArray(response.orders)) {
+          ordersData = response.orders;
+          console.log('✓ Orders found in response.orders:', ordersData.length);
+        } else if (response?.results && Array.isArray(response.results)) {
+          ordersData = response.results;
+          console.log('✓ Orders found in response.results:', ordersData.length);
+        } else if (response?.items && Array.isArray(response.items)) {
+          ordersData = response.items;
+          console.log('✓ Orders found in response.items:', ordersData.length);
+        }
+        
+        // If still no orders found, try recursive search
+        if (ordersData.length === 0 && response && typeof response === 'object') {
+          console.log('⚠ No orders found in common locations, searching recursively...');
+          const foundArray = findArrayInObject(response);
+          if (foundArray) {
+            ordersData = foundArray;
+            console.log('✓ Orders found via recursive search:', ordersData.length);
+          }
+        }
+        
+        // Final fallback - try response.data || response.orders || response || []
+        if (ordersData.length === 0) {
+          ordersData = response?.data || response?.orders || response || [];
+          if (Array.isArray(ordersData)) {
+            console.log('✓ Using fallback approach, found:', ordersData.length, 'items');
+          } else {
+            console.warn('⚠ Fallback did not return an array');
+            ordersData = [];
+          }
+        }
+        
+        console.log('Final ordersData:', ordersData);
+        console.log('Final ordersData length:', ordersData.length);
+        console.log('First order sample:', ordersData[0]);
+        console.log('================================');
+        
+        // Normalize order data to match component format
+        const normalizedOrders = Array.isArray(ordersData) && ordersData.length > 0
+          ? ordersData.map(normalizeOrderData)
+          : [];
+        
+        console.log('Normalized orders count:', normalizedOrders.length);
+        
+        // Set orders from API
         setOrders(normalizedOrders);
         
         if (normalizedOrders.length === 0) {
-          console.info('No orders found in API response.');
+          if (response) {
+            console.warn('⚠ No orders found. Full response structure:', JSON.stringify(response, null, 2));
+            setError('No orders found. Please check the browser console for the API response structure.');
+          } else {
+            setError('No orders found. The API returned an empty response.');
+          }
+        } else {
+          console.log('✅ Successfully loaded', normalizedOrders.length, 'orders');
+          setError(null); // Clear any previous errors
         }
       } catch (err) {
         // Handle 401 errors gracefully
         if (err.response?.status === 401) {
           console.error('Authentication failed. Please login again.');
           setError('Authentication failed. Please login again.');
+          setOrders([]);
           return;
         }
         
@@ -102,13 +244,19 @@ const Orders = () => {
         if (err.response?.status === 404) {
           console.error('Orders endpoint not found.');
           setError('Orders endpoint not found. Please check if the endpoint is implemented.');
-          setOrders([]); // Set empty array instead of dummy data
+          setOrders([]);
           return;
         }
         
         setError(err.message || 'Failed to fetch orders');
         console.error('Error fetching orders:', err);
-        // Set empty array on error instead of dummy data
+        console.error('Error details:', {
+          message: err.message,
+          status: err.response?.status,
+          data: err.response?.data,
+          url: err.config?.url,
+          baseURL: err.config?.baseURL
+        });
         setOrders([]);
       } finally {
         setLoading(false);
@@ -268,12 +416,83 @@ const Orders = () => {
     alert(`Edit functionality for order ${order.id} will be implemented here.`);
   };
 
-  const handleViewOrder = (order) => {
-    setSelectedOrder(order);
+  const handleViewOrder = async (order) => {
+    try {
+      setOrderDetailsLoading(true);
+      setOrderDetailsError(null);
+      
+      // Extract order ID - try multiple sources and remove # prefix if present
+      let orderId = order.originalOrder?.id || order.originalOrder?.orderId || order.originalOrder?._id || 
+                    order.id || order.orderId || order._id;
+      
+      // Remove # prefix if present
+      if (typeof orderId === 'string' && orderId.startsWith('#')) {
+        orderId = orderId.substring(1);
+      }
+      
+      // Ensure we have a valid ID
+      if (!orderId || orderId === 'N/A') {
+        throw new Error('Order ID not found');
+      }
+      
+      console.log('Fetching order details for ID:', orderId);
+      
+      // Fetch order details from API
+      const orderDetailsResponse = await getOrderById(orderId);
+      
+      console.log('Order details response:', orderDetailsResponse);
+      
+      // Handle different response structures
+      let orderDetails = null;
+      if (orderDetailsResponse) {
+        if (orderDetailsResponse.data) {
+          orderDetails = orderDetailsResponse.data;
+        } else if (orderDetailsResponse.order) {
+          orderDetails = orderDetailsResponse.order;
+        } else {
+          orderDetails = orderDetailsResponse;
+        }
+      }
+      
+      if (orderDetails) {
+        // Normalize the fetched order details
+        const normalizedDetails = normalizeOrderData(orderDetails);
+        // Merge with the original order data to preserve any UI state
+        setSelectedOrder({
+          ...normalizedDetails,
+          originalOrder: orderDetails,
+          // Preserve the original order data for reference
+          fetchedDetails: orderDetails
+        });
+      } else {
+        // If no details found, use the existing order data
+        setSelectedOrder(order);
+        setOrderDetailsError('Order details not found. Showing available information.');
+      }
+    } catch (err) {
+      console.error('Error fetching order details:', err);
+      
+      // Handle 404 errors
+      if (err.response?.status === 404) {
+        setOrderDetailsError('Order details not found. Showing available information.');
+        // Still show the order with available data
+        setSelectedOrder(order);
+      } else if (err.response?.status === 401) {
+        setOrderDetailsError('Authentication failed. Please login again.');
+        setSelectedOrder(null);
+      } else {
+        setOrderDetailsError(err.message || 'Failed to fetch order details. Showing available information.');
+        // Still show the order with available data
+        setSelectedOrder(order);
+      }
+    } finally {
+      setOrderDetailsLoading(false);
+    }
   };
 
   const handleCloseDetails = () => {
     setSelectedOrder(null);
+    setOrderDetailsError(null);
   };
 
   const handleConfirmOrder = () => {
@@ -289,48 +508,73 @@ const Orders = () => {
       setError(null);
       const response = await getOrders();
       
-      console.log('Orders API Response (Refresh):', response);
-      
-      // Handle different response structures
+      // Use the same logic as fetchOrders
       let ordersData = [];
+      
       if (Array.isArray(response)) {
         ordersData = response;
-      } else if (response.data && Array.isArray(response.data)) {
-        ordersData = response.data;
-      } else if (response.orders && Array.isArray(response.orders)) {
+      } else if (response?.data) {
+        if (Array.isArray(response.data)) {
+          ordersData = response.data;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          ordersData = response.data.data;
+        } else if (response.data.orders && Array.isArray(response.data.orders)) {
+          ordersData = response.data.orders;
+        }
+      } else if (response?.orders && Array.isArray(response.orders)) {
         ordersData = response.orders;
-      } else if (response.results && Array.isArray(response.results)) {
+      } else if (response?.results && Array.isArray(response.results)) {
         ordersData = response.results;
+      } else if (response?.items && Array.isArray(response.items)) {
+        ordersData = response.items;
       }
       
-      // Normalize order data to match component format
-      const normalizedOrders = ordersData.map(normalizeOrderData);
+      // Try recursive search if still no orders
+      if (ordersData.length === 0 && response && typeof response === 'object') {
+        const foundArray = findArrayInObject(response);
+        if (foundArray) {
+          ordersData = foundArray;
+        }
+      }
       
-      // Set orders from API (empty array if no orders)
+      // Final fallback
+      if (ordersData.length === 0) {
+        ordersData = response?.data || response?.orders || response || [];
+        if (!Array.isArray(ordersData)) {
+          ordersData = [];
+        }
+      }
+      
+      // Normalize order data
+      const normalizedOrders = Array.isArray(ordersData) && ordersData.length > 0
+        ? ordersData.map(normalizeOrderData)
+        : [];
+      
       setOrders(normalizedOrders);
       
       if (normalizedOrders.length === 0) {
-        console.info('No orders found in API response.');
+        setError('No orders found. Please check the browser console for the API response structure.');
+      } else {
+        console.log('✅ Successfully refreshed', normalizedOrders.length, 'orders');
+        setError(null);
       }
     } catch (err) {
-      // Handle 401 errors gracefully
       if (err.response?.status === 401) {
         console.error('Authentication failed. Please login again.');
         setError('Authentication failed. Please login again.');
+        setOrders([]);
         return;
       }
       
-      // Handle 404 errors
       if (err.response?.status === 404) {
         console.error('Orders endpoint not found.');
         setError('Orders endpoint not found. Please check if the endpoint is implemented.');
-        setOrders([]); // Set empty array instead of dummy data
+        setOrders([]);
         return;
       }
       
       setError(err.message || 'Failed to refresh orders');
       console.error('Error refreshing orders:', err);
-      // Set empty array on error instead of keeping existing orders
       setOrders([]);
     } finally {
       setLoading(false);
@@ -648,6 +892,8 @@ const Orders = () => {
           order={selectedOrder}
           onClose={handleCloseDetails}
           onConfirmOrder={handleConfirmOrder}
+          loading={orderDetailsLoading}
+          error={orderDetailsError}
         />
       )}
 
