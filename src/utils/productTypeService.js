@@ -8,7 +8,7 @@ import apiClient from './apiClient';
 // Get all product types
 export const getProductTypes = async () => {
   try {
-    const response = await apiClient.get('/product-types');
+    const response = await apiClient.get('/product-type/all');
     return response.data;
   } catch (error) {
     throw error;

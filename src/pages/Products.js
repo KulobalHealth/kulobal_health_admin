@@ -373,8 +373,8 @@ const Products = () => {
               <tr>
                 <th>Product Name</th>
                 <th>Category</th>
-                <th>Performance</th>
-                <th>Stock</th>
+                <th>Brand</th>
+                <th>Manufacturer</th>
                 <th>Price</th>
                 <th>Visibility</th>
                 <th>Actions</th>
