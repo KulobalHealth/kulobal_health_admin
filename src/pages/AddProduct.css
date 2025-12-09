@@ -48,6 +48,41 @@
   margin: 0;
 }
 
+/* Success Alert */
+.success-alert {
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: #d1fae5;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  animation: slideDown 0.3s ease-out;
+}
+
+.success-alert-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #065f46;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.success-icon {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Form */
 .add-product-form {
   display: flex;
@@ -292,6 +327,58 @@
 
 .remove-image-button:hover {
   background: rgba(0, 0, 0, 0.8);
+}
+
+.remove-image-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.image-uploading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.image-uploading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #00A170;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.image-error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(239, 68, 68, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.image-error-overlay span {
+  color: #ef4444;
+  font-size: 20px;
+  font-weight: bold;
 }
 
 /* Form Fields */

@@ -8,10 +8,7 @@ import apiClient from './apiClient';
 // Get all product types
 export const getProductTypes = async () => {
   try {
-    console.log('Fetching product types from /product-types endpoint...');
     const response = await apiClient.get('/product-types');
-    console.log('Product types response status:', response.status);
-    console.log('Product types response data:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error in getProductTypes:', error);
