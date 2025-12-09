@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiArrowLeft, HiPlus } from 'react-icons/hi2';
+import apiClient from '../utils/apiClient';
 import './AddProduct.css';
 
 const AddProduct = () => {
@@ -9,32 +10,21 @@ const AddProduct = () => {
     productName: '',
     productTypeCode: '',
     price: '',
-    quantity: '',
-    brand: '',
-    category: '',
-    description: '',
     brand: '',
     manufacturer: '',
-    quantity: '',
+    description: '',
     visibility: false,
   });
 
-  const categories = [
-    { value: '', label: 'Select Category' },
-    { value: 'test-kits', label: 'Test Kits' },
-    { value: 'medications', label: 'Medications' },
-    { value: 'medical-equipment', label: 'Medical Equipment' },
-    { value: 'supplements', label: 'Supplements' },
-    { value: 'personal-care', label: 'Personal Care' },
-    { value: 'baby-care', label: 'Baby Care' },
-    { value: 'first-aid', label: 'First Aid' },
-    { value: 'wellness', label: 'Wellness Products' },
-    { value: 'other', label: 'Other' },
-  ];
+  const [productTypes, setProductTypes] = useState([]);
   const [images, setImages] = useState([]); // { file, preview, name }
   const imagesRef = useRef(new Set()); // track created object URLs for cleanup
   const MAX_IMAGES = 5;
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [warning, setWarning] = useState(null);
+  const [loadingProductTypes, setLoadingProductTypes] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -167,6 +157,61 @@ const AddProduct = () => {
     });
   };
 
+  // Fetch product types on mount
+  useEffect(() => {
+    const fetchProductTypes = async () => {
+      setLoadingProductTypes(true);
+      try {
+        // Try fetching from the API
+        const response = await apiClient.get('/product-type');
+        console.log('Product types API response:', response);
+        console.log('Response data:', response.data);
+        
+        // Handle different response structures
+        let types = [];
+        if (response.data?.data) {
+          types = response.data.data;
+        } else if (response.data) {
+          types = Array.isArray(response.data) ? response.data : [response.data];
+        }
+        
+        console.log('Extracted types:', types);
+        
+        if (types.length > 0) {
+          setProductTypes(types);
+        } else {
+          console.warn('No product types found, using fallback');
+          // Fallback to common product types if API returns empty
+          setProductTypes([
+            { code: 'RAPID_TEST_KITS', name: 'Rapid Test Kits' },
+            { code: 'MEDICATIONS', name: 'Medications' },
+            { code: 'MEDICAL_EQUIPMENT', name: 'Medical Equipment' },
+            { code: 'SUPPLEMENTS', name: 'Supplements' },
+            { code: 'PERSONAL_CARE', name: 'Personal Care' },
+          ]);
+          setWarning('Using default categories. Some categories may not be available.');
+        }
+      } catch (error) {
+        console.error('Error fetching product types:', error);
+        console.error('Error details:', error.response?.data);
+        
+        // Use fallback categories on error
+        setProductTypes([
+          { code: 'RAPID_TEST_KITS', name: 'Rapid Test Kits' },
+          { code: 'MEDICATIONS', name: 'Medications' },
+          { code: 'MEDICAL_EQUIPMENT', name: 'Medical Equipment' },
+          { code: 'SUPPLEMENTS', name: 'Supplements' },
+          { code: 'PERSONAL_CARE', name: 'Personal Care' },
+        ]);
+        setWarning('Could not load all categories from server. Using default categories.');
+      } finally {
+        setLoadingProductTypes(false);
+      }
+    };
+    
+    fetchProductTypes();
+  }, []);
+
   useEffect(() => {
     return () => {
       // revoke all previews on unmount
@@ -183,18 +228,46 @@ const AddProduct = () => {
     setWarning(null);
 
     try {
-      // TODO: Implement API call to add product
-      console.log('Form data:', formData);
-      console.log('Images:', images);
+      // Validate that at least one image has been uploaded successfully
+      const uploadedImages = images.filter(img => img.url && !img.uploading && !img.error);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (uploadedImages.length === 0) {
+        setError('Please wait for images to finish uploading or add at least one image');
+        setLoading(false);
+        return;
+      }
+
+      // Prepare product data for API
+      const productData = {
+        productName: formData.productName,
+        productTypeCode: formData.productTypeCode,
+        price: parseFloat(formData.price),
+        brand: formData.brand,
+        manufacturer: formData.manufacturer || formData.brand,
+        description: formData.description,
+        photos: uploadedImages.map(img => img.url),
+      };
+
+      console.log('Submitting product:', productData);
+
+      // Import createProduct dynamically to avoid circular dependencies
+      const { createProduct } = await import('../utils/productsService');
+      const response = await createProduct(productData);
       
-      // Navigate back to products list
-      navigate('/products');
+      console.log('Product created successfully:', response);
+      
+      // Show success message
+      setSuccess(true);
+      
+      // Wait 2 seconds before navigating to show the success message
+      setTimeout(() => {
+        navigate('/products');
+      }, 2000);
+      
     } catch (error) {
       console.error('Error adding product:', error);
-    } finally {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to add product. Please try again.';
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -214,6 +287,49 @@ const AddProduct = () => {
           </p>
         </div>
       </div>
+
+      {/* Warning Message */}
+      {warning && (
+        <div style={{ 
+          padding: '12px 16px', 
+          backgroundColor: '#fef3c7', 
+          color: '#92400e', 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          fontSize: '14px',
+          border: '1px solid #fbbf24'
+        }}>
+          ⚠️ {warning}
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div style={{ 
+          padding: '12px 16px', 
+          backgroundColor: '#fee2e2', 
+          color: '#dc2626', 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          fontSize: '14px'
+        }}>
+          ❌ {error}
+        </div>
+      )}
+
+      {/* Success Message */}
+      {success && (
+        <div style={{ 
+          padding: '12px 16px', 
+          backgroundColor: '#dcfce7', 
+          color: '#166534', 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          fontSize: '14px'
+        }}>
+          ✅ Product added successfully! Redirecting to products list...
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="add-product-form">
         {/* Product Stock Information Section */}
@@ -332,23 +448,6 @@ const AddProduct = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="quantity" className="form-label">
-                Quantity <span className="required">*</span>
-              </label>
-              <input
-                type="number"
-                id="quantity"
-                name="quantity"
-                value={formData.quantity}
-                onChange={handleChange}
-                placeholder="eg. 300"
-                className="form-input"
-                required
-                min="0"
-              />
-            </div>
-
-            <div className="form-group">
               <label htmlFor="brand" className="form-label">
                 Brand <span className="required">*</span>
               </label>
@@ -380,24 +479,6 @@ const AddProduct = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="manufacturer" className="form-label">
-                Manufacturer <span className="required">*</span>
-              </label>
-              <input
-                type="text"
-                id="manufacturer"
-                name="manufacturer"
-                value={formData.manufacturer}
-                onChange={handleChange}
-                placeholder="Enter the product's manufacturer"
-                className="form-input"
-                required
-              />
-            </div>
-
-          </div>
-
-          <div className="form-group">
               <label htmlFor="productTypeCode" className="form-label">
                 Category <span className="required">*</span>
               </label>
@@ -409,14 +490,17 @@ const AddProduct = () => {
                 className="form-input form-select"
                 required
               >
+                <option value="">Select Category</option>
                 {loadingProductTypes ? (
-                  <option value="">Loading categories...</option>
-                ) : (
-                  categories.map((cat) => (
-                    <option key={cat.value} value={cat.value}>
-                      {cat.label}
+                  <option value="" disabled>Loading categories...</option>
+                ) : productTypes.length > 0 ? (
+                  productTypes.map((type) => (
+                    <option key={type.code || type.id} value={type.code}>
+                      {type.name}
                     </option>
                   ))
+                ) : (
+                  <option value="" disabled>No categories available</option>
                 )}
               </select>
             </div>
