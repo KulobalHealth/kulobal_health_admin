@@ -28,6 +28,22 @@ apiClient.interceptors.request.use(
       hasToken: !!token,
       withCredentials: config.withCredentials
     });
+    
+    // Log request body for POST/PUT/PATCH requests
+    if (['POST', 'PUT', 'PATCH'].includes(config.method?.toUpperCase())) {
+      try {
+        const body = config.data;
+        if (body) {
+          console.log('Request Body:', typeof body === 'string' ? JSON.parse(body) : body);
+          if (body.productTypeCode !== undefined) {
+            console.log('Product Type Code in request:', body.productTypeCode);
+            console.log('Product Type Code type:', typeof body.productTypeCode);
+          }
+        }
+      } catch (e) {
+        console.log('Request Body (could not parse):', config.data);
+      }
+    }
     return config;
   },
   (error) => {

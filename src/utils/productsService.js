@@ -32,9 +32,27 @@ export const getProductById = async (id) => {
 // Create new product
 export const createProduct = async (productData) => {
   try {
+    console.log('=== CREATE PRODUCT REQUEST ===');
+    console.log('Request URL:', '/product');
+    console.log('Request method:', 'POST');
+    console.log('Request body:', JSON.stringify(productData, null, 2));
+    console.log('Product Type Code being sent:', productData.productTypeCode);
+    console.log('Product Type Code type:', typeof productData.productTypeCode);
+    console.log('Product Type Code value:', productData.productTypeCode);
+    
     const response = await apiClient.post('/product', productData);
+    
+    console.log('=== CREATE PRODUCT RESPONSE ===');
+    console.log('Response status:', response.status);
+    console.log('Response data:', response.data);
+    
     return response.data;
   } catch (error) {
+    console.error('=== CREATE PRODUCT ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error response status:', error.response?.status);
+    console.error('Error response data:', error.response?.data);
+    console.error('Full error:', error);
     throw error;
   }
 };

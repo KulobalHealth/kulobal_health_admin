@@ -3,6 +3,14 @@ import apiClient from './apiClient';
 /**
  * Image Upload Service
  * Handles all image upload-related API calls
+ * 
+ * Endpoints:
+ * - POST /api/v1/admin/image-upload - Upload a single image
+ * 
+ * Expected response format:
+ * {
+ *   url: "https://..." // or imageUrl, secure_url (Cloudinary), etc.
+ * }
  */
 
 // Upload single image
@@ -11,7 +19,7 @@ export const uploadImage = async (imageFile) => {
     const formData = new FormData();
     formData.append('image', imageFile);
 
-    const response = await apiClient.post('/upload/image', formData, {
+    const response = await apiClient.post('/image-upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -26,8 +34,14 @@ export const uploadImage = async (imageFile) => {
 export const uploadImages = async (imageFiles) => {
   try {
     const formData = new FormData();
-    imageFiles.forEach((file, index) => {
-      formData.append(`images`, file);
+    // Handle both File objects and objects with file property
+    imageFiles.forEach((fileOrObj, index) => {
+      const file = fileOrObj instanceof File ? fileOrObj : (fileOrObj?.file || fileOrObj);
+      if (file instanceof File) {
+        formData.append(`images`, file);
+      } else {
+        console.warn('Invalid file at index', index, ':', fileOrObj);
+      }
     });
 
     const response = await apiClient.post('/upload/images', formData, {

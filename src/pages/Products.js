@@ -49,7 +49,15 @@ const Products = () => {
         const response = await getProducts();
         
         // Handle different response structures
-        const productsData = response.data || response.products || response || [];
+        let productsData = response.data || response.products || response || [];
+        
+        // Normalize products to ensure they all have an 'id' field
+        // Some APIs return _id instead of id
+        productsData = productsData.map(product => ({
+          ...product,
+          id: product.id || product._id || product.productId || product.ID,
+        }));
+        
         setProducts(productsData);
       } catch (err) {
         // Handle 401 errors gracefully - don't show error if token was cleared
@@ -161,6 +169,13 @@ const Products = () => {
   };
 
   const handleViewClick = (product) => {
+    // Ensure product has an ID before opening details
+    const productId = product.id || product._id || product.productId;
+    if (!productId) {
+      console.error('Product missing ID:', product);
+      console.error('Available product keys:', Object.keys(product || {}));
+      return;
+    }
     setSelectedProduct(product);
   };
 
@@ -374,7 +389,7 @@ const Products = () => {
                 <th>Product Name</th>
                 <th>Category</th>
                 <th>Performance</th>
-                <th>Stock</th>
+                <th>Manufacturer</th>
                 <th>Price</th>
                 <th>Visibility</th>
                 <th>Actions</th>
