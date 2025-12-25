@@ -5,7 +5,6 @@ import {
   Home01Icon,
   UserGroup02Icon,
   Building01Icon,
-  Link01Icon,
   ShoppingCart01Icon,
   TruckIcon,
   Package01Icon,
@@ -36,9 +35,8 @@ const Sidebar = () => {
 
   const menuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home01Icon },
-    { path: '/patients-care', label: 'Patients Care', icon: UserGroup02Icon },
+    { path: '/patients-care', label: 'Care Data', icon: UserGroup02Icon },
     { path: '/pharmacies', label: 'Pharmacies', icon: Building01Icon },
-    { path: '/ddi-integrators', label: 'DDI Integrators', icon: Link01Icon },
     { path: '/orders', label: 'Orders', icon: ShoppingCart01Icon },
     { path: '/suppliers', label: 'Suppliers', icon: TruckIcon },
     { path: '/products', label: 'Products', icon: Package01Icon },

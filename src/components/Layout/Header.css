@@ -1,6 +1,6 @@
 .header {
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background: #000000;
+  border-bottom: 1px solid #333333;
   padding: 16px 24px;
   display: flex;
   justify-content: space-between;
@@ -25,8 +25,9 @@
   }
   
   .logo-image {
-    height: 40px;
+    height: 28px;
     width: auto;
+    max-width: 120px;
     object-fit: contain;
   }
   
@@ -39,7 +40,7 @@
   .icon-button {
     background: none;
     border: none;
-    color: #6b7280;
+    color: #ffffff;
     cursor: pointer;
     padding: 8px;
     display: flex;
@@ -51,8 +52,8 @@
   }
   
   .icon-button:hover {
-    background: #f3f4f6;
-    color: #374151;
+    background: #333333;
+    color: #ffffff;
   }
 
   /* Notifications */
@@ -302,7 +303,7 @@
     gap: 8px;
     background: none;
     border: none;
-    color: #374151;
+    color: #ffffff;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -310,9 +311,16 @@
     border-radius: 8px;
     transition: all 0.2s ease;
   }
+
+  .user-icon {
+    width: 18px;
+    height: 18px;
+    color: #ffffff;
+    flex-shrink: 0;
+  }
   
   .user-button:hover {
-    background: #f3f4f6;
+    background: #333333;
   }
   
   .user-dropdown {

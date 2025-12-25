@@ -9,8 +9,8 @@
 
 ### Check Your Postman Login Request:
 1. **Endpoint URL**: What is the full URL in Postman?
-   - Example: `https://kulobalhealth-backend-qlhm.onrender.com/api/v1/admin/auth/login`
-   - Or: `https://kulobalhealth-backend-qlhm.onrender.com/auth/login`
+   - Example: `https://kulobalhealth-backend-1.onrender.com/api/v1/admin/auth/login`
+   - Or: `https://kulobalhealth-backend-1.onrender.com/auth/login`
 
 2. **Request Method**: Should be `POST`
 

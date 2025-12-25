@@ -146,6 +146,8 @@ const Orders = () => {
       try {
         setLoading(true);
         setError(null);
+        
+        console.log('Orders Page: Fetching orders...');
         const response = await getOrders();
         
         console.log('=== Orders API Response Debug ===');

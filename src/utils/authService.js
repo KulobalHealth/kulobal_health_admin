@@ -8,35 +8,48 @@ import apiClient from './apiClient';
 // Login user
 export const login = async (credentials) => {
   try {
-    console.log('Attempting login with:', { endpoint: '/auth/login', credentials: { ...credentials, password: '***' } });
+    console.log('🔐 Attempting login with:', { endpoint: '/auth/login', credentials: { ...credentials, password: '***' } });
     const response = await apiClient.post('/auth/login', credentials);
-    console.log('Login response:', response.data);
+    console.log('✅ Login response received');
+    console.log('📦 Response structure:', Object.keys(response.data));
+    console.log('📄 Full response data:', response.data);
+    console.log('📋 Response headers:', response.headers);
+    console.log('🍪 Set-Cookie header:', response.headers['set-cookie']);
     
-    // Backend uses cookies for authentication
-    // The cookie is set automatically by the server via Set-Cookie header
-    // We still store user data in localStorage for client-side use
-    const token = response.data.token || response.data.data?.token || response.data.accessToken;
-    const user = response.data.user || response.data.data?.user || response.data.data;
+    // Check if browser received cookies
+    console.log('🍪 Current cookies:', document.cookie);
+    console.log('🔍 Checking if auth cookie was set...');
     
-    // Store token if provided (for hybrid auth or client-side checks)
-    if (token) {
-      localStorage.setItem('token', token);
-      console.log('Token stored successfully');
+    // Extract user data - all user fields are in response.data.data
+    const user = response.data.data || 
+                 response.data.user ||
+                 response.data.admin;
+    
+    console.log('👤 User data found:', !!user);
+    
+    if (document.cookie.length === 0) {
+      console.warn('⚠️ WARNING: No cookies found in browser!');
+      console.warn('💡 This means the backend is NOT setting cookies correctly.');
+      console.warn('📍 Backend must set cookies with proper CORS configuration.');
     } else {
-      // If no token in response, set a flag to indicate cookie-based auth
-      localStorage.setItem('token', 'cookie-auth');
-      console.log('Cookie-based authentication - cookie set by server');
+      console.log('✅ Cookies found in browser:', document.cookie);
     }
     
-    // Store user data for client-side use
+    // Store user data for client-side use (for UI display, etc.)
+    // Authentication is handled by HTTP-only cookies sent automatically
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
-      console.log('User data stored successfully');
+      console.log('✅ User data stored successfully');
+    } else {
+      console.warn('⚠️ No user data in login response');
     }
+    
+    // Remove any old token if it exists (cleanup)
+    localStorage.removeItem('token');
     
     return response.data;
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
     console.error('Error details:', {
       message: error.message,
       status: error.response?.status,
@@ -66,7 +79,7 @@ export const logout = async () => {
     console.warn('Logout endpoint failed, clearing local data only:', error);
   } finally {
     // Always clear local storage
-    localStorage.removeItem('token');
+    // Note: HTTP-only cookie is cleared by the backend logout endpoint
     localStorage.removeItem('user');
   }
 };
@@ -86,27 +99,26 @@ export const getCurrentUser = () => {
 
 // Check if user is authenticated
 // For cookie-based auth, we check if user data exists
-// The actual authentication is handled by cookies sent with requests
+// The actual authentication is handled by HTTP-only cookies sent with requests
 export const isAuthenticated = () => {
-  const token = localStorage.getItem('token');
   const user = localStorage.getItem('user');
-  // User is considered authenticated if we have user data or token
-  // The cookie validation happens on the server side
-  return !!(token || user);
+  // User is considered authenticated if we have user data
+  // The cookie validation happens on the server side with each request
+  return !!user;
 };
 
-// Get auth token
+// Get auth token (not used for cookie-based auth)
+// Returns null since we use HTTP-only cookies only
 export const getToken = () => {
-  return localStorage.getItem('token');
+  return null;
 };
 
-// Refresh token (if your API supports it)
+// Refresh session (if your API supports it)
+// For cookie-based auth, the cookie is automatically refreshed by the backend
 export const refreshToken = async () => {
   try {
     const response = await apiClient.post('/auth/refresh');
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-    }
+    // Cookie is automatically set by backend, no need to store anything
     return response.data;
   } catch (error) {
     logout();

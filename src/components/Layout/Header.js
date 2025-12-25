@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiBell, HiCheck, HiXMark } from 'react-icons/hi2';
-import { logout } from '../../utils/authService';
+import { HiBell, HiCheck, HiXMark, HiUser } from 'react-icons/hi2';
+import { logout, getCurrentUser } from '../../utils/authService';
+import { getOrders } from '../../utils/ordersService';
 import logoImage from '../../assets/images/logo.png';
 import './Header.css';
 
@@ -10,63 +11,105 @@ const Header = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationsRef = useRef(null);
+  const [userEmail, setUserEmail] = useState('Admin user');
 
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: 'New Order Received',
-      message: 'Order #ORD-1234 has been placed by Pharmacy ABC',
-      time: '2 minutes ago',
-      read: false,
-      type: 'order',
-    },
-    {
-      id: 2,
-      title: 'Payment Received',
-      message: 'Payment of GHS 5,000 received from Supplier XYZ',
-      time: '15 minutes ago',
-      read: false,
-      type: 'payment',
-    },
-    {
-      id: 3,
-      title: 'Low Stock Alert',
-      message: 'Malaria Test Kit stock is running low (50 units remaining)',
-      time: '1 hour ago',
-      read: false,
-      type: 'alert',
-    },
-    {
-      id: 4,
-      title: 'New Supplier Registered',
-      message: 'Supplier Company has been registered successfully',
-      time: '2 hours ago',
-      read: true,
-      type: 'info',
-    },
-    {
-      id: 5,
-      title: 'Order Delivered',
-      message: 'Order #ORD-1230 has been delivered successfully',
-      time: '3 hours ago',
-      read: true,
-      type: 'success',
-    },
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
-  // Simulate real-time notifications (add new notification every 30 seconds)
+  // Helper function to format time ago
+  const getTimeAgo = (dateString) => {
+    if (!dateString) return 'Recently';
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffInSeconds = Math.floor((now - date) / 1000);
+      
+      if (diffInSeconds < 60) return 'Just now';
+      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+      if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+      return date.toLocaleDateString();
+    } catch (e) {
+      return 'Recently';
+    }
+  };
+
+  // Get user email on component mount
   useEffect(() => {
+    const user = getCurrentUser();
+    if (user) {
+      // Try different possible email field names
+      const email = user.email || user.adminEmail || user.userEmail || user.emailAddress || user.email_address;
+      if (email) {
+        setUserEmail(email);
+      }
+    }
+  }, []);
+
+  // Fetch pending orders and convert to notifications
+  const fetchPendingOrders = async () => {
+    try {
+      setLoadingNotifications(true);
+      const response = await getOrders();
+      
+      // Extract orders array from response
+      let ordersData = [];
+      if (Array.isArray(response)) {
+        ordersData = response;
+      } else if (response.data && Array.isArray(response.data)) {
+        ordersData = response.data;
+      } else if (response.orders && Array.isArray(response.orders)) {
+        ordersData = response.orders;
+      }
+
+      // Filter for pending orders
+      const pendingOrders = ordersData.filter((order) => {
+        const status = order.status || order.orderStatus || '';
+        return status.toUpperCase() === 'PENDING' || status === 'Pending';
+      });
+
+      // Convert pending orders to notifications
+      const orderNotifications = pendingOrders.map((order) => {
+        const orderId = order.orderId || order.id || order._id || 'N/A';
+        const pharmacyName = order.pharmacyName || 
+                           order.pharmacy?.name || 
+                           order.pharmacy?.pharmacyName || 
+                           'Unknown Pharmacy';
+        const amount = order.amount || order.total || order.totalAmount || '0.00';
+        const orderDate = order.orderDate || order.createdAt || order.date || new Date().toISOString();
+
+        return {
+          id: `order-${orderId}`,
+          title: 'New Pending Order',
+          message: `Order ${orderId} from ${pharmacyName} - GHS ${amount}`,
+          time: getTimeAgo(orderDate),
+          read: false,
+          type: 'order',
+          orderId: orderId,
+          orderData: order,
+        };
+      });
+
+      setNotifications(orderNotifications);
+      console.log('📬 Fetched pending orders:', pendingOrders.length, 'notifications created');
+    } catch (error) {
+      console.error('❌ Error fetching pending orders for notifications:', error);
+      // Don't show error to user, just log it
+      setNotifications([]);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  // Fetch pending orders on mount and set up periodic refresh
+  useEffect(() => {
+    // Fetch immediately
+    fetchPendingOrders();
+
+    // Refresh every 30 seconds to get new pending orders
     const interval = setInterval(() => {
-      const newNotification = {
-        id: Date.now(),
-        title: 'New Notification',
-        message: `This is a real-time notification at ${new Date().toLocaleTimeString()}`,
-        time: 'Just now',
-        read: false,
-        type: 'info',
-      };
-      setNotifications((prev) => [newNotification, ...prev]);
-    }, 30000); // Add notification every 30 seconds
+      fetchPendingOrders();
+    }, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
   }, []);
@@ -106,6 +149,17 @@ const Header = () => {
 
   const handleDeleteNotification = (id) => {
     setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+  };
+
+  const handleNotificationClick = (notification) => {
+    // Mark as read
+    handleMarkAsRead(notification.id);
+    
+    // Navigate to orders page
+    if (notification.type === 'order') {
+      navigate('/orders');
+      setShowNotifications(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -160,16 +214,20 @@ const Header = () => {
                   )}
                 </div>
                 <div className="notifications-list">
-                  {notifications.length === 0 ? (
+                  {loadingNotifications ? (
                     <div className="no-notifications">
-                      <p>No notifications</p>
+                      <p>Loading notifications...</p>
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div className="no-notifications">
+                      <p>No pending orders</p>
                     </div>
                   ) : (
                     notifications.map((notification) => (
                       <div
                         key={notification.id}
                         className={`notification-item ${!notification.read ? 'unread' : ''}`}
-                        onClick={() => handleMarkAsRead(notification.id)}
+                        onClick={() => handleNotificationClick(notification)}
                       >
                         <div className="notification-content">
                           <div className="notification-header-item">
@@ -195,7 +253,15 @@ const Header = () => {
                 </div>
                 {notifications.length > 0 && (
                   <div className="notifications-footer">
-                    <button className="view-all-button">View All Notifications</button>
+                    <button 
+                      className="view-all-button"
+                      onClick={() => {
+                        navigate('/orders');
+                        setShowNotifications(false);
+                      }}
+                    >
+                      View All Orders
+                    </button>
                   </div>
                 )}
               </div>
@@ -224,7 +290,8 @@ const Header = () => {
             className="user-button"
             onClick={() => setShowUserMenu(!showUserMenu)}
           >
-            <span className="user-name">Admin user</span>
+            <HiUser className="user-icon" />
+            <span className="user-name">{userEmail}</span>
             <svg
               width="16"
               height="16"

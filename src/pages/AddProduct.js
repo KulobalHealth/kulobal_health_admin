@@ -161,49 +161,47 @@ const AddProduct = () => {
   useEffect(() => {
     const fetchProductTypes = async () => {
       setLoadingProductTypes(true);
+      setWarning(null);
+      
       try {
-        // Try fetching from the API
-        const response = await apiClient.get('/product-type');
-        console.log('Product types API response:', response);
-        console.log('Response data:', response.data);
+        console.log('Fetching product types from API...');
         
-        // Handle different response structures
+        // Use the correct endpoint
+        const response = await apiClient.get('/product-type/types-with-products');
+        console.log('Product types API response:', response);
+        console.log('Response data structure:', response.data);
+        
+        // Extract the data array from response
         let types = [];
-        if (response.data?.data) {
+        if (response.data?.data && Array.isArray(response.data.data)) {
           types = response.data.data;
-        } else if (response.data) {
-          types = Array.isArray(response.data) ? response.data : [response.data];
+        } else if (Array.isArray(response.data)) {
+          types = response.data;
         }
         
-        console.log('Extracted types:', types);
+        console.log('Extracted product types:', types);
+        console.log('Number of types found:', types.length);
+        
+        // Log each type's structure
+        if (types.length > 0) {
+          console.log('First product type structure:', types[0]);
+          console.log('Product type codes available:', types.map(t => t.productTypeCode));
+        }
         
         if (types.length > 0) {
           setProductTypes(types);
+          console.log('Product types loaded successfully');
         } else {
-          console.warn('No product types found, using fallback');
-          // Fallback to common product types if API returns empty
-          setProductTypes([
-            { code: 'RAPID_TEST_KITS', name: 'Rapid Test Kits' },
-            { code: 'MEDICATIONS', name: 'Medications' },
-            { code: 'MEDICAL_EQUIPMENT', name: 'Medical Equipment' },
-            { code: 'SUPPLEMENTS', name: 'Supplements' },
-            { code: 'PERSONAL_CARE', name: 'Personal Care' },
-          ]);
-          setWarning('Using default categories. Some categories may not be available.');
+          throw new Error('No product types returned from API');
         }
       } catch (error) {
         console.error('Error fetching product types:', error);
-        console.error('Error details:', error.response?.data);
+        console.error('Error message:', error.message);
+        console.error('Error response:', error.response?.data);
+        console.error('Error status:', error.response?.status);
         
-        // Use fallback categories on error
-        setProductTypes([
-          { code: 'RAPID_TEST_KITS', name: 'Rapid Test Kits' },
-          { code: 'MEDICATIONS', name: 'Medications' },
-          { code: 'MEDICAL_EQUIPMENT', name: 'Medical Equipment' },
-          { code: 'SUPPLEMENTS', name: 'Supplements' },
-          { code: 'PERSONAL_CARE', name: 'Personal Care' },
-        ]);
-        setWarning('Could not load all categories from server. Using default categories.');
+        setError('Unable to load product categories. Please contact support or try again later.');
+        setProductTypes([]);
       } finally {
         setLoadingProductTypes(false);
       }
@@ -248,7 +246,10 @@ const AddProduct = () => {
         photos: uploadedImages.map(img => img.url),
       };
 
-      console.log('Submitting product:', productData);
+      console.log('Submitting product data:', productData);
+      console.log('Product Type Code being sent:', formData.productTypeCode);
+      console.log('Available product types:', productTypes.map(t => t.productTypeCode));
+      console.log('Is this code in the available types?', productTypes.some(t => t.productTypeCode === formData.productTypeCode));
 
       // Import createProduct dynamically to avoid circular dependencies
       const { createProduct } = await import('../utils/productsService');
@@ -299,7 +300,7 @@ const AddProduct = () => {
           fontSize: '14px',
           border: '1px solid #fbbf24'
         }}>
-          ⚠️ {warning}
+           {warning}
         </div>
       )}
 
@@ -313,7 +314,7 @@ const AddProduct = () => {
           marginBottom: '20px',
           fontSize: '14px'
         }}>
-          ❌ {error}
+           {error}
         </div>
       )}
 
@@ -327,7 +328,7 @@ const AddProduct = () => {
           marginBottom: '20px',
           fontSize: '14px'
         }}>
-          ✅ Product added successfully! Redirecting to products list...
+           Product added successfully! Redirecting to products list...
         </div>
       )}
 
@@ -495,8 +496,8 @@ const AddProduct = () => {
                   <option value="" disabled>Loading categories...</option>
                 ) : productTypes.length > 0 ? (
                   productTypes.map((type) => (
-                    <option key={type.code || type.id} value={type.code}>
-                      {type.name}
+                    <option key={type.productTypeId} value={type.productTypeCode}>
+                      {type.productType}
                     </option>
                   ))
                 ) : (

@@ -22,7 +22,7 @@ const getFullImageUrl = (imagePath) => {
   }
   
   // Get base URL from environment or use default
-  const baseURL = process.env.REACT_APP_API_BASE_URL || 'https://kulobalhealth-backend-qlhm.onrender.com/api/v1/admin';
+  const baseURL = process.env.REACT_APP_API_BASE_URL || 'https://kulobalhealth-backend-1.onrender.com/api/v1/admin';
   
   // If it starts with /, it's a relative path - construct full URL
   if (path.startsWith('/')) {

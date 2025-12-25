@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { HiArrowLeft } from 'react-icons/hi2';
+import { getProductById, updateProduct } from '../utils/productsService';
+import { uploadImage } from '../utils/imageUploadService';
+import apiClient from '../utils/apiClient';
 import './EditProduct.css';
 
 const EditProduct = () => {
@@ -9,48 +12,96 @@ const EditProduct = () => {
   
   const [formData, setFormData] = useState({
     productName: '',
+    productTypeCode: '',
     price: '',
-    quantity: '',
     brand: '',
-    category: '',
+    manufacturer: '',
     description: '',
     visibility: false,
   });
 
-  const categories = [
-    { value: '', label: 'Select Category' },
-    { value: 'test-kits', label: 'Test Kits' },
-    { value: 'medications', label: 'Medications' },
-    { value: 'medical-equipment', label: 'Medical Equipment' },
-    { value: 'supplements', label: 'Supplements' },
-    { value: 'personal-care', label: 'Personal Care' },
-    { value: 'baby-care', label: 'Baby Care' },
-    { value: 'first-aid', label: 'First Aid' },
-    { value: 'wellness', label: 'Wellness Products' },
-    { value: 'other', label: 'Other' },
-  ];
-  const [images, setImages] = useState([
-    '/api/placeholder/120/120',
-    '/api/placeholder/120/120',
-    '/api/placeholder/120/120',
-    '/api/placeholder/120/120',
-    null,
-  ]);
+  const [productTypes, setProductTypes] = useState([]);
+  const [images, setImages] = useState([]); // Existing product images
+  const [newImages, setNewImages] = useState([]); // New images to upload
   const [loading, setLoading] = useState(false);
+  const [fetchingProduct, setFetchingProduct] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [loadingProductTypes, setLoadingProductTypes] = useState(false);
 
-  // Load product data (in real app, fetch from API)
+  // Fetch product types
   useEffect(() => {
-    // TODO: Fetch product data by id
-    // For now, set sample data
-    setFormData({
-      productName: 'Fertilizer',
-      price: '200.00',
-      quantity: '300',
-      brand: 'Greater Accra',
-      category: 'other',
-      description: 'Lorem ipsum dolor sit amet consectetur. Odio quisque sed arcu elit justo tortor. Vitae facilisi nam aliquet est placerat venenatis.',
-      visibility: true,
-    });
+    const fetchProductTypes = async () => {
+      setLoadingProductTypes(true);
+      try {
+        const response = await apiClient.get('/product-type/types-with-products');
+        const types = response.data?.data || [];
+        setProductTypes(types);
+      } catch (error) {
+        console.error('Error fetching product types:', error);
+      } finally {
+        setLoadingProductTypes(false);
+      }
+    };
+    fetchProductTypes();
+  }, []);
+
+  // Load product data from API
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setFetchingProduct(true);
+        setError(null);
+        
+        console.log('🔍 Fetching product with ID:', id);
+        const response = await getProductById(id);
+        console.log('📦 Product data received:', response);
+        
+        // Extract product data from response
+        const product = response.data || response;
+        
+        // Set form data
+        setFormData({
+          productName: product.productName || '',
+          productTypeCode: product.productTypeCode || '',
+          price: product.price || '',
+          brand: product.brand || '',
+          manufacturer: product.manufacturer || '',
+          description: product.description || '',
+          visibility: product.visibility || false,
+        });
+        
+        // Set existing images
+        if (product.photos && Array.isArray(product.photos)) {
+          setImages(product.photos.map(url => ({ url, isExisting: true })));
+        }
+        
+      } catch (error) {
+        console.error('❌ Error fetching product:', error);
+        console.error('📍 Error status:', error.response?.status);
+        console.error('📝 Error message:', error.response?.data?.message || error.message);
+        console.error('🔍 Full error:', error.response?.data);
+        
+        let errorMessage = 'Failed to load product data. ';
+        if (error.response?.status === 404) {
+          errorMessage += 'Product not found.';
+        } else if (error.response?.status === 401) {
+          errorMessage += 'Authentication required.';
+        } else if (error.response?.data?.message) {
+          errorMessage += error.response.data.message;
+        } else {
+          errorMessage += 'Please try again.';
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setFetchingProduct(false);
+      }
+    };
+    
+    if (id) {
+      fetchProduct();
+    }
   }, [id]);
 
   const handleChange = (e) => {
@@ -61,41 +112,113 @@ const EditProduct = () => {
     });
   };
 
-  const handleImageChange = (index, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const newImages = [...images];
-      newImages[index] = URL.createObjectURL(file);
-      setImages(newImages);
-    }
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    const imageFiles = files.filter((f) => f.type && f.type.startsWith('image/'));
+    if (imageFiles.length === 0) return;
+    
+    // Add new images to upload
+    const imagesToAdd = imageFiles.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      isExisting: false,
+    }));
+    
+    setNewImages((prev) => [...prev, ...imagesToAdd]);
+    e.target.value = '';
   };
 
-  const handleRemoveImage = (index) => {
-    const newImages = [...images];
-    newImages[index] = null;
-    setImages(newImages);
+  const handleRemoveExistingImage = (index) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveNewImage = (index) => {
+    setNewImages((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      // Revoke object URL to free memory
+      if (prev[index]?.preview) {
+        URL.revokeObjectURL(prev[index].preview);
+      }
+      return updated;
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
+    setSuccess(false);
 
     try {
-      // TODO: Implement API call to update product
-      console.log('Updating product:', id, formData);
-      console.log('Images:', images);
+      console.log('📤 Updating product:', id);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Upload new images if any
+      let uploadedImageUrls = [];
+      if (newImages.length > 0) {
+        console.log('📸 Uploading new images...');
+        for (const img of newImages) {
+          try {
+            const formData = new FormData();
+            formData.append('image', img.file);
+            const response = await apiClient.post('/image-upload', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            const imageUrl = response.data?.data?.imageUrl;
+            if (imageUrl) uploadedImageUrls.push(imageUrl);
+          } catch (err) {
+            console.warn('Failed to upload image:', err);
+          }
+        }
+      }
       
-      // Navigate back to products list
-      navigate('/products');
+      // Combine existing images with newly uploaded ones
+      const existingImageUrls = images.filter(img => img.isExisting).map(img => img.url);
+      const allPhotos = [...existingImageUrls, ...uploadedImageUrls];
+      
+      // Prepare update data
+      const updateData = {
+        productName: formData.productName,
+        productTypeCode: formData.productTypeCode,
+        price: parseFloat(formData.price),
+        brand: formData.brand,
+        manufacturer: formData.manufacturer || formData.brand,
+        description: formData.description,
+        photos: allPhotos,
+      };
+      
+      console.log('📦 Update data:', updateData);
+      
+      // Call update API
+      const response = await updateProduct(id, updateData);
+      console.log('✅ Product updated successfully:', response);
+      
+      // Show success message
+      setSuccess(true);
+      
+      // Navigate back after 2 seconds
+      setTimeout(() => {
+        navigate('/products');
+      }, 2000);
+      
     } catch (error) {
-      console.error('Error updating product:', error);
-    } finally {
+      console.error('❌ Error updating product:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update product. Please try again.';
+      setError(errorMessage);
       setLoading(false);
     }
   };
+
+  if (fetchingProduct) {
+    return (
+      <div className="edit-product-page">
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <p>Loading product data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="edit-product-page">
@@ -113,6 +236,34 @@ const EditProduct = () => {
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div style={{ 
+          padding: '12px 16px', 
+          backgroundColor: '#fee2e2', 
+          color: '#dc2626', 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          fontSize: '14px'
+        }}>
+          ❌ {error}
+        </div>
+      )}
+
+      {/* Success Message */}
+      {success && (
+        <div style={{ 
+          padding: '12px 16px', 
+          backgroundColor: '#dcfce7', 
+          color: '#166534', 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          fontSize: '14px'
+        }}>
+          ✅ Product updated successfully! Redirecting...
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="edit-product-form">
         {/* Product Stock Information Section */}
         <div className="form-section">
@@ -121,57 +272,79 @@ const EditProduct = () => {
           {/* Product Images */}
           <div className="form-group">
             <label className="form-label">
-              Product Images <span className="required">*</span>
+              Product Images
             </label>
-            <div className="image-upload-grid">
-              {images.map((image, index) => (
-                <div key={index} className="image-upload-box">
-                  {image ? (
-                    <div className="image-preview">
-                      <img src={image} alt={`Preview ${index + 1}`} />
-                      <div className="image-overlay">
-                        <label className="update-photo-button">
-                          <input
-                            type="file"
-                            accept="image/png,image/jpeg"
-                            onChange={(e) => handleImageChange(index, e)}
-                            className="image-upload-input"
-                          />
-                          Update photo
-                        </label>
+            
+            {/* Existing Images */}
+            {images.length > 0 && (
+              <div>
+                <p style={{ fontSize: '14px', marginBottom: '10px', color: '#666' }}>Current Images:</p>
+                <div className="image-upload-grid">
+                  {images.map((image, index) => (
+                    <div key={`existing-${index}`} className="image-upload-box">
+                      <div className="image-preview">
+                        <img src={image.url} alt={`Current ${index + 1}`} />
                         <button
                           type="button"
                           className="remove-image-button"
-                          onClick={() => handleRemoveImage(index)}
+                          onClick={() => handleRemoveExistingImage(index)}
+                          title="Remove this image"
                         >
                           ×
                         </button>
                       </div>
                     </div>
-                  ) : (
-                    <label className="image-upload-label">
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg"
-                        onChange={(e) => handleImageChange(index, e)}
-                        className="image-upload-input"
-                      />
-                      <div className="image-upload-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                          <path
-                            d="M12 4V20M4 12H20"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      </div>
-                      <span className="image-upload-text">Click to upload</span>
-                      <span className="image-upload-hint">PNG or JPG</span>
-                    </label>
-                  )}
+                  ))}
                 </div>
-              ))}
+              </div>
+            )}
+            
+            {/* New Images */}
+            {newImages.length > 0 && (
+              <div style={{ marginTop: '20px' }}>
+                <p style={{ fontSize: '14px', marginBottom: '10px', color: '#666' }}>New Images to Upload:</p>
+                <div className="image-upload-grid">
+                  {newImages.map((image, index) => (
+                    <div key={`new-${index}`} className="image-upload-box">
+                      <div className="image-preview">
+                        <img src={image.preview} alt={`New ${index + 1}`} />
+                        <button
+                          type="button"
+                          className="remove-image-button"
+                          onClick={() => handleRemoveNewImage(index)}
+                          title="Remove this image"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Upload Button */}
+            <div style={{ marginTop: '20px' }}>
+              <label className="image-upload-label" style={{ display: 'inline-block', cursor: 'pointer' }}>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  multiple
+                  onChange={handleImageChange}
+                  className="image-upload-input"
+                  style={{ display: 'none' }}
+                />
+                <div style={{ 
+                  padding: '12px 24px', 
+                  backgroundColor: '#f3f4f6', 
+                  border: '2px dashed #d1d5db',
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                  cursor: 'pointer'
+                }}>
+                  <span style={{ fontSize: '14px', color: '#4b5563' }}>+ Add New Images</span>
+                </div>
+              </label>
             </div>
           </div>
 
@@ -212,23 +385,6 @@ const EditProduct = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="quantity" className="form-label">
-                Quantity <span className="required">*</span>
-              </label>
-              <input
-                type="number"
-                id="quantity"
-                name="quantity"
-                value={formData.quantity}
-                onChange={handleChange}
-                placeholder="eg. 300"
-                className="form-input"
-                required
-                min="0"
-              />
-            </div>
-
-            <div className="form-group">
               <label htmlFor="brand" className="form-label">
                 Brand <span className="required">*</span>
               </label>
@@ -245,22 +401,44 @@ const EditProduct = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="category" className="form-label">
+              <label htmlFor="manufacturer" className="form-label">
+                Manufacturer
+              </label>
+              <input
+                type="text"
+                id="manufacturer"
+                name="manufacturer"
+                value={formData.manufacturer}
+                onChange={handleChange}
+                placeholder="Enter the manufacturer (optional)"
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="productTypeCode" className="form-label">
                 Category <span className="required">*</span>
               </label>
               <select
-                id="category"
-                name="category"
-                value={formData.category}
+                id="productTypeCode"
+                name="productTypeCode"
+                value={formData.productTypeCode}
                 onChange={handleChange}
                 className="form-input form-select"
                 required
               >
-                {categories.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                ))}
+                <option value="">Select Category</option>
+                {loadingProductTypes ? (
+                  <option value="" disabled>Loading categories...</option>
+                ) : productTypes.length > 0 ? (
+                  productTypes.map((type) => (
+                    <option key={type.productTypeId} value={type.productTypeCode}>
+                      {type.productType}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>No categories available</option>
+                )}
               </select>
             </div>
           </div>

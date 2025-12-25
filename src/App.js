@@ -15,8 +15,8 @@ import Suppliers from './pages/Suppliers';
 import Transactions from './pages/Transactions';
 import Pharmacies from './pages/Pharmacies';
 import PharmacyDetail from './pages/PharmacyDetail';
+import CareData from './pages/CareData';
 // Import other pages as you create them
-// import PatientsCare from './pages/PatientsCare';
 // import DDIIntegrators from './pages/DDIIntegrators';
 // import Analytics from './pages/Analytics';
 
@@ -39,10 +39,10 @@ function App() {
         <Route path="/transactions" element={<Layout><Transactions /></Layout>} />
         <Route path="/pharmacies" element={<Layout><Pharmacies /></Layout>} />
         <Route path="/pharmacies/:id" element={<Layout><PharmacyDetail /></Layout>} />
+        <Route path="/patients-care" element={<Layout><CareData /></Layout>} />
         <Route path="/settings" element={<Layout><Settings /></Layout>} />
         
         {/* Uncomment and add routes as you create the pages */}
-        {/* <Route path="/patients-care" element={<Layout><PatientsCare /></Layout>} /> */}
         {/* <Route path="/ddi-integrators" element={<Layout><DDIIntegrators /></Layout>} /> */}
         {/* <Route path="/analytics" element={<Layout><Analytics /></Layout>} /> */}
       </Routes>

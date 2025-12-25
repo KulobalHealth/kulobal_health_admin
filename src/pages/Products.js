@@ -8,11 +8,10 @@ import {
   HiPlus,
   HiBars3,
   HiFunnel,
-  HiCube,
   HiExclamationTriangle,
   HiXMark,
 } from 'react-icons/hi2';
-import { FaShoppingBag, FaBox } from 'react-icons/fa';
+import { FaShoppingBag } from 'react-icons/fa';
 import ProductDetails from '../components/Products/ProductDetails';
 import { getProducts, deleteProduct, toggleProductVisibility } from '../utils/productsService';
 import './Products.css';
@@ -23,16 +22,12 @@ const Products = () => {
   const [itemsPerPage, setItemsPerPage] = useState('6 per page');
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, productId: null, productName: '' });
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const kpiData = [
-    { title: 'Number of products in stock', value: '40,000' },
-    { title: 'Average Performance', value: 'Good' },
-    { title: 'Products Sold', value: '40,000' },
-  ];
 
   const itemsPerPageOptions = ['6 per page', '12 per page', '24 per page', '48 per page'];
 
@@ -100,17 +95,24 @@ const Products = () => {
     if (!query) return products;
 
     return products.filter((product) => {
+      // Search across all relevant product fields
       const searchableFields = [
-        product.name,
-        product.category,
-        product.performance,
-        product.price,
-        product.stock,
+        product.productName,        // Product name
+        product.name,                // Fallback for name
+        product.productType,         // Category/Type
+        product.productTypeCode,     // Type code
+        product.brand,               // Brand
+        product.manufacturer,        // Manufacturer
+        product.description,         // Description
+        product.price,               // Price (convert to string for search)
+        product.currency,            // Currency
       ];
 
-      return searchableFields.some((field) =>
-        field?.toString().toLowerCase().includes(query)
-      );
+      // Convert all fields to strings and search
+      return searchableFields.some((field) => {
+        if (field === null || field === undefined) return false;
+        return String(field).toLowerCase().includes(query);
+      });
     });
   }, [products, searchQuery]);
 
@@ -184,28 +186,75 @@ const Products = () => {
   };
 
   const handleDeleteClick = (productId, productName) => {
-    setDeleteModal({ isOpen: true, productId, productName });
+    // Normalize product ID - ensure we have the correct ID format
+    const normalizedId = productId || productId?._id || productId?.productId;
+    if (!normalizedId) {
+      console.error('Cannot delete: Product ID is missing', { productId, productName });
+      setError('Cannot delete product: Product ID is missing');
+      return;
+    }
+    setDeleteModal({ isOpen: true, productId: normalizedId, productName });
   };
 
   const handleDeleteConfirm = async () => {
-    if (deleteModal.productId) {
-      try {
-        // Delete via API
-        await deleteProduct(deleteModal.productId);
-        
-        // Update local state
-        setProducts(products.filter((product) => product.id !== deleteModal.productId));
-        setDeleteModal({ isOpen: false, productId: null, productName: '' });
-      } catch (err) {
-        console.error('Error deleting product:', err);
-        // You might want to show an error toast/notification here
-        setDeleteModal({ isOpen: false, productId: null, productName: '' });
+    if (!deleteModal.productId) {
+      setDeleteError('Product ID is missing. Cannot delete.');
+      return;
+    }
+    
+    setDeleting(true);
+    setDeleteError(null);
+    
+    try {
+      console.log('🗑️ Attempting to delete product:', {
+        productId: deleteModal.productId,
+        productIdType: typeof deleteModal.productId,
+        productName: deleteModal.productName,
+        allProducts: products.map(p => ({ id: p.id, _id: p._id, productId: p.productId }))
+      });
+      
+      // Ensure we're passing the correct ID format
+      const productIdToDelete = String(deleteModal.productId).trim();
+      console.log('📤 Sending delete request with ID:', productIdToDelete);
+      
+      // Delete via API - endpoint: DELETE /product/{id}
+      await deleteProduct(productIdToDelete);
+      
+      // Update local state - remove deleted product from list
+      // Check multiple ID fields to ensure we remove the correct product
+      setProducts(products.filter((product) => {
+        const productId = product.id || product._id || product.productId;
+        const deleteId = deleteModal.productId;
+        return productId !== deleteId && String(productId) !== String(deleteId);
+      }));
+      
+      // Close modal and reset state
+      setDeleteModal({ isOpen: false, productId: null, productName: '' });
+      setDeleteError(null);
+      
+      console.log('✅ Product deleted successfully from database');
+    } catch (err) {
+      console.error('❌ Error deleting product:', err);
+      
+      // Log full error details for debugging
+      if (err.response) {
+        console.error('📋 Error Response Status:', err.response.status);
+        console.error('📋 Error Response Data:', err.response.data);
+        console.error('📋 Full Error Response:', JSON.stringify(err.response.data, null, 2));
       }
+      
+      const errorMessage = err.message || 'Failed to delete product. Please try again.';
+      setDeleteError(errorMessage);
+      // Don't close modal on error so user can see the error message
+    } finally {
+      setDeleting(false);
     }
   };
 
   const handleDeleteCancel = () => {
     setDeleteModal({ isOpen: false, productId: null, productName: '' });
+    setDeleteError(null);
+    setDeleting(false);
   };
 
   const getPerformanceColor = (color) => {
@@ -235,6 +284,8 @@ const Products = () => {
 
   return (
     <div className="products-page">
+      {/* Admin Watermark */}
+      <div className="admin-watermark">Admin</div>
       {/* Header */}
       <div className="products-header">
         <div>
@@ -267,18 +318,6 @@ const Products = () => {
         </div>
       )}
 
-      {/* KPI Cards */}
-      {!loading && (
-        <div className="products-kpi-grid">
-          {kpiData.map((kpi, index) => (
-            <div key={index} className="products-kpi-card">
-              <h3 className="products-kpi-title">{kpi.title}</h3>
-              <p className="products-kpi-value">{kpi.value}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Search and Filter Bar */}
       <div className="products-filters">
         <form onSubmit={handleSearch} className="products-search-form">
@@ -286,7 +325,7 @@ const Products = () => {
             <HiMagnifyingGlass className="products-search-icon" />
             <input
               type="text"
-              placeholder="Search product"
+              placeholder="Search by name, brand, category, or description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="products-search-input"
@@ -399,19 +438,13 @@ const Products = () => {
               {paginatedProducts.map((product) => (
                 <tr key={product.id}>
                   <td>
-                    <div className="product-cell">
-                      <div className="product-icon-wrapper">
-                        <HiCube className="product-icon" />
-                      </div>
-                      <span className="product-table-name">{product.productName}</span>
-                    </div>
+                    <span className="product-table-name">{product.productName}</span>
                   </td>
                     <td>
                       <span
                         className="product-category-badge"
                         style={getCategoryStyle(product.productType)}
                       >
-                        <span className="product-category-dot" />
                         {product.productType || 'Uncategorized'}
                       </span>
                     </td>
@@ -429,10 +462,7 @@ const Products = () => {
                     </div>
                   </td>
                   <td>
-                    <div className="stock-cell">
-                      <FaBox className="stock-icon" />
-                      <span>{product.manufacturer}</span>
-                    </div>
+                    <span>{product.manufacturer}</span>
                   </td>
                   <td>
                     <div className="price-cell">
@@ -470,7 +500,11 @@ const Products = () => {
                       <button
                         className="product-action-button delete-button"
                         title="Delete"
-                        onClick={() => handleDeleteClick(product.id, product.name)}
+                        onClick={() => {
+                          const productId = product.id || product._id || product.productId;
+                          const productName = product.productName || product.name || 'this product';
+                          handleDeleteClick(productId, productName);
+                        }}
                       >
                         <HiTrash />
                       </button>
@@ -531,9 +565,13 @@ const Products = () => {
 
       {/* Delete Confirmation Modal */}
       {deleteModal.isOpen && (
-        <div className="delete-modal-overlay" onClick={handleDeleteCancel}>
+        <div className="delete-modal-overlay" onClick={!deleting ? handleDeleteCancel : undefined}>
           <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="delete-modal-close" onClick={handleDeleteCancel}>
+            <button 
+              className="delete-modal-close" 
+              onClick={handleDeleteCancel}
+              disabled={deleting}
+            >
               <HiXMark />
             </button>
             <div className="delete-modal-content">
@@ -544,12 +582,37 @@ const Products = () => {
               <p className="delete-modal-message">
                 Are you sure you want to delete <strong>"{deleteModal.productName}"</strong>? This action cannot be undone.
               </p>
+              
+              {/* Error Message */}
+              {deleteError && (
+                <div className="delete-modal-error" style={{
+                  padding: '12px',
+                  marginTop: '16px',
+                  backgroundColor: '#fee2e2',
+                  border: '1px solid #fca5a5',
+                  borderRadius: '6px',
+                  color: '#dc2626',
+                  fontSize: '14px'
+                }}>
+                  {deleteError}
+                </div>
+              )}
+              
               <div className="delete-modal-actions">
-                <button className="delete-modal-cancel" onClick={handleDeleteCancel}>
+                <button 
+                  className="delete-modal-cancel" 
+                  onClick={handleDeleteCancel}
+                  disabled={deleting}
+                >
                   Cancel
                 </button>
-                <button className="delete-modal-confirm" onClick={handleDeleteConfirm}>
-                  Delete Product
+                <button 
+                  className="delete-modal-confirm" 
+                  onClick={handleDeleteConfirm}
+                  disabled={deleting}
+                  style={{ opacity: deleting ? 0.6 : 1, cursor: deleting ? 'not-allowed' : 'pointer' }}
+                >
+                  {deleting ? 'Deleting...' : 'Delete Product'}
                 </button>
               </div>
             </div>

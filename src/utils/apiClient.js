@@ -2,31 +2,29 @@ import axios from 'axios';
 
 // Create axios instance with default configuration
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://kulobalhealth-backend-qlhm.onrender.com/api/v1/admin',
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://kulobalhealth-backend-1.onrender.com/api/v1/admin',
   timeout: 30000, // 30 seconds
-  withCredentials: true, // Enable sending cookies with requests
+  withCredentials: true, // Enable sending/receiving cookies with requests
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor - Add auth token to requests (if using token-based auth)
-// For cookie-based auth, cookies are sent automatically via withCredentials
+// Request interceptor - For HTTP-only cookie authentication
+// Cookies are sent automatically via withCredentials
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    // Only add Bearer token if token exists (for hybrid auth or fallback)
-    // If backend uses cookies only, this won't be needed
-    if (token && !config.headers.Authorization) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // For HTTP-only cookie auth, we don't need to add Authorization header
+    // The cookie is sent automatically by the browser
+    
     // Log request for debugging
-    console.log('API Request:', {
+    console.log('📤 API Request:', {
       method: config.method?.toUpperCase(),
-      url: config.baseURL + config.url,
-      baseURL: config.baseURL,
-      hasToken: !!token,
-      withCredentials: config.withCredentials
+      url: config.url,
+      fullURL: config.baseURL + config.url,
+      withCredentials: config.withCredentials,
+      authMethod: 'HTTP-only cookies (sent automatically)',
+      note: 'Cookies include auth credentials'
     });
     
     // Log request body for POST/PUT/PATCH requests
@@ -59,32 +57,60 @@ apiClient.interceptors.response.use(
   (error) => {
     // Handle 401 Unauthorized - Cookie expired or invalid
     if (error.response?.status === 401) {
-      const token = localStorage.getItem('token');
       const isLoginRequest = error.config?.url?.includes('/auth/login');
       const requestUrl = error.config?.baseURL + error.config?.url;
       
       console.error('401 Unauthorized Error:', {
         url: requestUrl,
-        hasToken: !!token,
         isLoginRequest,
         errorData: error.response?.data,
-        note: 'Backend uses cookies - cookie may be expired or invalid'
+        errorMessage: error.response?.data?.message,
+        note: 'Using HTTP-only cookies for authentication',
+        possibleCauses: [
+          '1. Cookie not being sent (CORS issue)',
+          '2. Cookie expired or invalid',
+          '3. Backend not configured to accept cookies from this origin',
+          '4. Cookie domain/path mismatch'
+        ]
       });
       
-      // Clear local storage (token and user data)
-      // Note: HTTP-only cookies are managed by the browser/server
-      if (!isLoginRequest) {
-        console.warn('Authentication failed. Clearing local data and redirecting to login...');
+      // Don't auto-logout for login requests
+      if (isLoginRequest) {
+        return Promise.reject(error);
+      }
+      
+      // Check if this is a session expiry or just an endpoint permission issue
+      const errorMsg = error.response?.data?.message?.toLowerCase() || '';
+      const errorMsgStr = JSON.stringify(error.response?.data || {}).toLowerCase();
+      
+      // Only logout if it's clearly a session/token expiry issue
+      const isSessionExpired = errorMsg.includes('session expired') || 
+                               errorMsg.includes('token expired') ||
+                               errorMsg.includes('jwt expired') ||
+                               errorMsg.includes('invalid session') ||
+                               errorMsg.includes('authentication failed') ||
+                               errorMsg.includes('please login') ||
+                               errorMsgStr.includes('unauthenticated');
+      
+      if (isSessionExpired) {
+        console.warn('🔒 Session/Token expired. Clearing local data and redirecting to login...');
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         
-        // Redirect after a short delay to allow error to be logged
         setTimeout(() => {
           const currentPath = window.location.pathname;
           if (currentPath !== '/' && currentPath !== '/login') {
             window.location.href = '/';
           }
-        }, 300);
+        }, 500);
+      } else {
+        // For other 401 errors, log but don't auto-logout
+        // This could be endpoint-specific permissions or other issues
+        console.warn('⚠️ 401 error received but not a session expiry.');
+        console.warn('💡 Possible reasons: endpoint permissions, missing data, or backend configuration.');
+        console.warn('📍 Endpoint:', requestUrl);
+        console.warn('📝 Error message:', error.response?.data?.message || 'No message');
+        // Don't logout - let the page handle the error
       }
     }
 
@@ -105,7 +131,30 @@ apiClient.interceptors.response.use(
       return Promise.reject(new Error(errorMessage));
     }
 
-    // Handle other errors
+    // Handle other errors (including 500)
+    if (error.response?.status === 500) {
+      // For 500 errors, include more details from the server
+      const serverData = error.response?.data || {};
+      const serverMessage = serverData.message || 
+                           serverData.error || 
+                           serverData.detail ||
+                           serverData.msg ||
+                           JSON.stringify(serverData) ||
+                           'Internal server error';
+      
+      // Log full details in multiple ways for better visibility
+      console.error('💥 ========== 500 INTERNAL SERVER ERROR ==========');
+      console.error('📍 URL:', error.config?.baseURL + error.config?.url);
+      console.error('📝 Method:', error.config?.method?.toUpperCase());
+      console.error('📋 Error Message:', serverMessage);
+      console.error('📦 Full Response Data:', serverData);
+      console.error('📦 Response Data (JSON):', JSON.stringify(serverData, null, 2));
+      console.error('🔍 Full Error Object:', error);
+      console.error('===========================================');
+      
+      return Promise.reject(new Error(`Server error: ${serverMessage}`));
+    }
+    
     const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
     return Promise.reject(new Error(errorMessage));
   }
