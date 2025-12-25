@@ -33,10 +33,10 @@ export const getProductById = async (id) => {
     
     return response.data;
   } catch (error) {
-    console.error('❌ Error in getProductById:', error);
-    console.error('📍 Error status:', error.response?.status);
-    console.error('📝 Error message:', error.response?.data?.message || error.message);
-    console.error('🔍 Error details:', error.response?.data);
+    console.error('Error in getProductById:', error);
+    console.error('Error status:', error.response?.status);
+    console.error('Error message:', error.response?.data?.message || error.message);
+    console.error('Error details:', error.response?.data);
     throw error;
   }
 };
@@ -72,20 +72,20 @@ export const createProduct = async (productData) => {
 // Update product
 export const updateProduct = async (id, productData) => {
   try {
-    console.log('📝 Updating product with ID:', id);
-    console.log('📡 Using PATCH /product/' + id);
-    console.log('📦 Update data:', productData);
+    console.log('Updating product with ID:', id);
+    console.log('Using PATCH /product/' + id);
+    console.log('Update data:', productData);
     
     const response = await apiClient.patch(`/product/${id}`, productData);
     
-    console.log('✅ Product updated successfully');
-    console.log('📦 Response:', response.data);
+    console.log('Product updated successfully');
+    console.log('Response:', response.data);
     
     return response.data;
   } catch (error) {
-    console.error('❌ Error updating product:', error);
-    console.error('📍 Error status:', error.response?.status);
-    console.error('📝 Error message:', error.response?.data?.message || error.message);
+    console.error('Error updating product:', error);
+    console.error('Error status:', error.response?.status);
+    console.error('Error message:', error.response?.data?.message || error.message);
     throw error;
   }
 };
@@ -95,41 +95,41 @@ export const deleteProduct = async (id) => {
   // Ensure ID is a string and trim any whitespace
   const productId = String(id).trim();
   
-  console.log('🗑️ === DELETE PRODUCT REQUEST ===');
-  console.log('📋 Product ID:', productId);
-  console.log('📋 Product ID type:', typeof productId);
-  console.log('📋 Product ID length:', productId.length);
+  console.log('=== DELETE PRODUCT REQUEST ===');
+  console.log('Product ID:', productId);
+  console.log('Product ID type:', typeof productId);
+  console.log('Product ID length:', productId.length);
   
   const baseURL = process.env.REACT_APP_API_BASE_URL || 'https://kulobalhealth-backend-1.onrender.com/api/v1/admin';
   
   // Try singular endpoint first: DELETE /product/{id}
   try {
-    console.log('📡 Trying endpoint: DELETE /product/${productId}');
-    console.log('🌐 Full URL:', `${baseURL}/product/${productId}`);
+    console.log('Trying endpoint: DELETE /product/${productId}');
+    console.log(' Full URL:', `${baseURL}/product/${productId}`);
     
     const response = await apiClient.delete(`/product/${productId}`);
     
-    console.log('✅ === DELETE PRODUCT SUCCESS ===');
-    console.log('📦 Response status:', response.status);
-    console.log('📦 Response data:', response.data);
+    console.log('=== DELETE PRODUCT SUCCESS ===');
+    console.log('Response status:', response.status);
+    console.log('Response data:', response.data);
     
     return response.data;
   } catch (error) {
-    console.error('❌ === DELETE PRODUCT ERROR (singular endpoint) ===');
-    console.error('📍 Error status:', error.response?.status);
-    console.error('📝 Error message:', error.response?.data?.message || error.message);
-    console.error('🔍 Full error response:', error.response);
-    console.error('🔍 Error response data:', error.response?.data);
+    console.error(' === DELETE PRODUCT ERROR (singular endpoint) ===');
+    console.error(' Error status:', error.response?.status);
+    console.error(' Error message:', error.response?.data?.message || error.message);
+    console.error('Full error response:', error.response);
+    console.error('Error response data:', error.response?.data);
     
     // If 404 on singular, try plural endpoint
     if (error.response?.status === 404) {
-      console.log('🔄 Trying alternative endpoint: DELETE /products/${productId}');
+      console.log('Trying alternative endpoint: DELETE /products/${productId}');
       try {
         const response = await apiClient.delete(`/products/${productId}`);
-        console.log('✅ Delete successful with plural endpoint');
+        console.log('Delete successful with plural endpoint');
         return response.data;
       } catch (pluralError) {
-        console.error('❌ Plural endpoint also failed:', pluralError.response?.status);
+        console.error(' Plural endpoint also failed:', pluralError.response?.status);
         // Fall through to original error handling
       }
     }
@@ -138,13 +138,13 @@ export const deleteProduct = async (id) => {
     if (error.response?.status === 500) {
       const serverData = error.response?.data || {};
       
-      console.error('💥 ========== DELETE PRODUCT - 500 ERROR ==========');
-      console.error('📋 Product ID that was sent:', productId);
-      console.error('📋 Server Response Data:', serverData);
-      console.error('📋 Server Response (JSON):', JSON.stringify(serverData, null, 2));
-      console.error('📋 Request URL:', error.config?.baseURL + error.config?.url);
-      console.error('📋 Request Method:', error.config?.method);
-      console.error('📋 Request Headers:', error.config?.headers);
+      console.error(' ========== DELETE PRODUCT - 500 ERROR ==========');
+      console.error('Product ID that was sent:', productId);
+      console.error('Server Response Data:', serverData);
+      console.error('Server Response (JSON):', JSON.stringify(serverData, null, 2));
+      console.error('Request URL:', error.config?.baseURL + error.config?.url);
+      console.error('Request Method:', error.config?.method);
+      console.error('Request Headers:', error.config?.headers);
       console.error('===================================================');
       
       // Try to extract a meaningful error message
