@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   HiArrowLeft,
   HiCheckCircle,
@@ -15,6 +15,7 @@ import './PharmacyDetail.css';
 const PharmacyDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pharmacy, setPharmacy] = useState(null);
@@ -25,16 +26,47 @@ const PharmacyDetail = () => {
         setLoading(true);
         setError(null);
         
+        // Check if pharmacy data was passed via navigation state
+        if (location.state?.pharmacy) {
+          console.log('✅ Using pharmacy data from navigation state');
+          setPharmacy(location.state.pharmacy);
+          setLoading(false);
+          return;
+        }
+        
+        // Otherwise fetch from API
         console.log('🏥 Fetching pharmacy details for ID:', id);
         const response = await getPharmacyById(id);
         
         // Handle different response structures
         const pharmacyData = response.data || response.pharmacy || response;
         
-        // Normalize pharmacy data
+        // Normalize pharmacy data to match expected structure
         const normalizedPharmacy = {
-          ...pharmacyData,
           id: pharmacyData.id || pharmacyData._id || pharmacyData.pharmacyId,
+          pharmacyId: pharmacyData.pharmacyId,
+          name: pharmacyData.pharmacy || pharmacyData.name || pharmacyData.pharmacyName,
+          location: pharmacyData.location || pharmacyData.city,
+          branches: pharmacyData.branch || pharmacyData.branches || 0,
+          licenceNumber: pharmacyData.licenceNumber || 'N/A',
+          address: pharmacyData.gps || pharmacyData.address || '',
+          pharmacistName: `${pharmacyData.firstName || ''} ${pharmacyData.lastName || ''}`.trim() || 'N/A',
+          pharmacistLicenceNumber: pharmacyData.pharmacistLicenceNumber || '',
+          email: pharmacyData.email || '',
+          phone: pharmacyData.phoneNumber || pharmacyData.phone || '',
+          subscriptionPlan: pharmacyData.subscriptionPlan || 'Free Trial',
+          subscriptionStatus: pharmacyData.subscriptionStatus || 'Active',
+          subscriptionExpiry: pharmacyData.subscriptionExpiry || '',
+          region: pharmacyData.region || '',
+          city: pharmacyData.city || '',
+          gps: pharmacyData.gps || '',
+          pharmacyBio: pharmacyData.pharmacyBio || '',
+          photo: pharmacyData.photo || '',
+          dateCreated: pharmacyData.dateCreated || '',
+          firstName: pharmacyData.firstName || '',
+          lastName: pharmacyData.lastName || '',
+          totalPatients: pharmacyData.totalPatients || 0,
+          rapidTestsConducted: pharmacyData.rapidTestsConducted || 0,
         };
         
         console.log('✅ Pharmacy details loaded:', normalizedPharmacy);
@@ -151,6 +183,26 @@ const PharmacyDetail = () => {
             <div className="info-row">
               <span className="info-label">Phone Number</span>
               <span className="info-value">{pharmacy.phone}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Statistics Card - Patients & Rapid Tests */}
+        <div className="pharmacy-detail-card stats-card">
+          <div className="card-icon-wrapper stats-icon">
+            <HiDocumentText />
+          </div>
+          <h2 className="card-title">Statistics</h2>
+          <div className="card-content">
+            <div className="stats-grid">
+              <div className="stat-item">
+                <div className="stat-label">Total Patients</div>
+                <div className="stat-value">{pharmacy.totalPatients || 0}</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-label">Rapid Tests Conducted</div>
+                <div className="stat-value">{pharmacy.rapidTestsConducted || 0}</div>
+              </div>
             </div>
           </div>
         </div>

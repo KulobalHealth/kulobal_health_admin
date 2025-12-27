@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -11,11 +11,49 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { getProductOrdersData } from '../../utils/dashboardService';
 import './ProductOrderChart.css';
 
 const ProductOrdersChart = ({ dateRange }) => {
-  // Sample data based on date range
-  const getData = () => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch product orders data from API
+  useEffect(() => {
+    const fetchProductOrdersData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await getProductOrdersData({ dateRange });
+        
+        // Handle different response structures
+        const ordersData = response.data || response.orders || response || [];
+        
+        console.log('📈 Product orders data loaded:', ordersData);
+        setData(ordersData);
+      } catch (err) {
+        console.error('❌ Error fetching product orders data:', err);
+        
+        // Handle 404 - use fallback mock data
+        if (err.response?.status === 404) {
+          console.log('⚠️ Endpoint not found, using mock data');
+          setData(getMockData());
+        } else if (err.response?.status !== 401) {
+          setError(err.message || 'Failed to fetch product orders data');
+          setData(getMockData()); // Use mock data on error
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProductOrdersData();
+  }, [dateRange]);
+
+  // Mock data fallback
+  const getMockData = () => {
     if (dateRange === '12 months') {
       return [
         { month: 'Jan', orders: 120, revenue: 24000 },
@@ -58,7 +96,6 @@ const ProductOrdersChart = ({ dateRange }) => {
     }
   };
 
-  const data = getData();
   const xAxisKey = dateRange === '12 months' ? 'month' : dateRange === '30 days' ? 'day' : dateRange === '7 days' ? 'day' : 'hour';
 
   return (

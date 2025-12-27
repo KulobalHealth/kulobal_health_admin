@@ -1,20 +1,66 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { getRecentOrders } from '../../utils/dashboardService';
 import './RecentOrdersTable.css';
 
 const RecentOrdersTable = () => {
-  const orders = [
-    {
-      orderId: '#57578558686',
-      productName: 'Malaria Test Kit',
-      pharmacyName: 'Humble Pharmacy',
-      amount: '200.00',
-      paymentStatus: 'Full Payment',
-      orderDate: 'Thu 7 Dec, 2025',
-      location: 'Greater Accra',
-      status: 'New Order',
-    },
-    // Add more orders as needed
-  ];
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch recent orders from API
+  useEffect(() => {
+    const fetchRecentOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await getRecentOrders({ limit: 10 });
+        
+        // Handle different response structures
+        let ordersData = response.data || response.orders || response || [];
+        
+        // Normalize orders data
+        ordersData = ordersData.map(order => ({
+          orderId: order.orderId || order.id || order._id || 'N/A',
+          productName: order.productName || order.product || 'Unknown Product',
+          pharmacyName: order.pharmacyName || order.pharmacy || 'Unknown Pharmacy',
+          amount: order.amount || order.total || order.totalAmount || '0.00',
+          paymentStatus: order.paymentStatus || order.payment || 'Pending',
+          orderDate: order.orderDate || order.createdAt || order.date || new Date().toLocaleDateString(),
+          location: order.location || order.city || order.region || 'N/A',
+          status: order.status || order.orderStatus || 'New Order',
+        }));
+        
+        console.log('📦 Recent orders loaded:', ordersData.length);
+        setOrders(ordersData);
+      } catch (err) {
+        console.error('❌ Error fetching recent orders:', err);
+        
+        // Handle 404 - use fallback mock data
+        if (err.response?.status === 404) {
+          console.log('⚠️ Endpoint not found, using mock data');
+          setOrders([
+            {
+              orderId: '#57578558686',
+              productName: 'Malaria Test Kit',
+              pharmacyName: 'Humble Pharmacy',
+              amount: '200.00',
+              paymentStatus: 'Full Payment',
+              orderDate: 'Thu 7 Dec, 2025',
+              location: 'Greater Accra',
+              status: 'New Order',
+            },
+          ]);
+        } else if (err.response?.status !== 401) {
+          setError(err.message || 'Failed to fetch recent orders');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentOrders();
+  }, []);
 
   return (
     <div className="recent-orders-table">

@@ -64,6 +64,8 @@ const Pharmacies = () => {
           dateCreated: pharmacy.dateCreated || '',
           firstName: pharmacy.firstName || '',
           lastName: pharmacy.lastName || '',
+          totalPatients: pharmacy.totalPatients || 0,
+          rapidTestsConducted: pharmacy.rapidTestsConducted || 0,
         }));
         
         console.log('📊 Pharmacies loaded:', pharmaciesData.length);
@@ -134,13 +136,9 @@ const Pharmacies = () => {
     setCurrentPage(1);
   };
 
-  const handleViewPharmacy = (pharmacyId) => {
-    navigate(`/pharmacies/${pharmacyId}`);
-  };
-
-  const handleEditPharmacy = (pharmacy) => {
-    // TODO: Implement edit functionality
-    console.log('Edit pharmacy:', pharmacy);
+  const handleViewPharmacy = (pharmacy) => {
+    // Pass the full pharmacy object via state
+    navigate(`/pharmacies/${pharmacy.id}`, { state: { pharmacy } });
   };
 
   const handleDeletePharmacy = (pharmacy) => {
@@ -368,17 +366,10 @@ const Pharmacies = () => {
                         <div className="action-buttons">
                           <button
                             className="action-button view"
-                            onClick={() => handleViewPharmacy(pharmacy.id)}
+                            onClick={() => handleViewPharmacy(pharmacy)}
                             title="View Details"
                           >
                             <HiEye />
-                          </button>
-                          <button
-                            className="action-button edit"
-                            onClick={() => handleEditPharmacy(pharmacy)}
-                            title="Edit"
-                          >
-                            <HiPencil />
                           </button>
                           <button
                             className="action-button delete"

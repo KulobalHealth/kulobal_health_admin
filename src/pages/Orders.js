@@ -863,11 +863,9 @@ const Orders = () => {
           <table className="orders-table">
             <thead>
               <tr>
-                <th>Order ID</th>
-                <th>Pharmacy Name</th>
-                <th>Amount(GHC)</th>
-                <th>Order Date</th>
-                <th>Location</th>
+                <th>Order</th>
+                <th>Amount</th>
+                <th>Date</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -875,7 +873,7 @@ const Orders = () => {
             <tbody>
               {paginatedOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>
+                  <td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>
                     <div style={{ color: '#9ca3af', fontSize: '14px' }}>
                       No orders found matching your criteria.
                     </div>
@@ -886,14 +884,19 @@ const Orders = () => {
                 <tr key={index}>
                   <td>
                     <div className="order-id-cell">
-                      <FaShoppingBag className="order-icon" />
+                      <div className="order-icon-wrapper">
+                        <FaShoppingBag className="order-icon" />
+                      </div>
                       <div className="order-id-content">
                         <div className="product-name">{order.productName}</div>
-                        <div className="order-id">{order.id}</div>
+                        <div className="order-meta">
+                          <span className="order-id">{order.id}</span>
+                          <span className="order-separator">•</span>
+                          <span className="pharmacy-name">{order.pharmacyName}</span>
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td>{order.pharmacyName}</td>
                   <td>
                     <div className="amount-cell">
                       <div className="amount">GHS {order.amount}</div>
@@ -909,12 +912,19 @@ const Orders = () => {
                       </div>
                     </div>
                   </td>
-                  <td>{order.orderDate}</td>
-                  <td>{order.location}</td>
+                  <td>
+                    <div className="date-cell">
+                      <div className="order-date">{order.orderDate}</div>
+                      <div className="order-location">{order.location}</div>
+                    </div>
+                  </td>
                   <td>
                     <div
                       className="order-status"
-                      style={{ color: getStatusDotColor(order.statusColor) }}
+                      style={{ 
+                        color: getStatusDotColor(order.statusColor),
+                        backgroundColor: `${getStatusDotColor(order.statusColor)}15`
+                      }}
                     >
                       <span
                         className="status-dot"
@@ -931,13 +941,6 @@ const Orders = () => {
                         onClick={() => handleViewOrder(order)}
                       >
                         <HiEye />
-                      </button>
-                      <button
-                        className="action-button"
-                        title="Edit"
-                        onClick={() => handleEditOrder(order)}
-                      >
-                        <HiPencil />
                       </button>
                     </div>
                   </td>
