@@ -1,0 +1,13 @@
+# .vercelignore
+# Ignore files and folders that should not be uploaded to Vercel
+node_modules
+*.log
+.env
+.env.*
+.git
+.gitignore
+README.md
+API_INTEGRATION_GUIDE.md
+LOGIN_TESTING_GUIDE.md
+QUICK_START.md
+VERCEL_DEPLOY.md

@@ -9,58 +9,55 @@ import {
   HiDocumentText,
 } from 'react-icons/hi2';
 import PagePreloader from '../components/common/PagePreloader';
+import { getPharmacyById } from '../utils/pharmaciesService';
 import './PharmacyDetail.css';
 
 const PharmacyDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [pharmacy, setPharmacy] = useState(null);
-
-  // Sample pharmacy data - in a real app, this would come from an API
-  const pharmacyData = {
-    P001: {
-      id: 'P001',
-      name: 'Humble Pharmacy',
-      location: 'Accra',
-      branches: 38,
-      licenceNumber: 'L89303003838',
-      address: '123 Main Street, Accra, Ghana',
-      pharmacistName: 'John Doe',
-      pharmacistLicenceNumber: 'LT38379723',
-      email: 'example@gmail.com',
-      phone: '0540977343',
-      subscriptionPlan: 'Premium Plan',
-      subscriptionStatus: 'Active',
-      subscriptionExpiry: 'June 30, 2025',
-      transactions: [],
-    },
-    P002: {
-      id: 'P002',
-      name: 'MediCare Pharmacy',
-      location: 'Kumasi',
-      branches: 25,
-      licenceNumber: 'L89303003839',
-      address: '456 High Street, Kumasi, Ghana',
-      pharmacistName: 'Jane Smith',
-      pharmacistLicenceNumber: 'LT38379724',
-      email: 'jane@example.com',
-      phone: '0241234567',
-      subscriptionPlan: 'Basic Plan',
-      subscriptionStatus: 'Active',
-      subscriptionExpiry: 'March 15, 2025',
-      transactions: [],
-    },
-  };
 
   useEffect(() => {
     const fetchPharmacy = async () => {
-      setLoading(true);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const foundPharmacy = pharmacyData[id] || pharmacyData.P001;
-      setPharmacy(foundPharmacy);
-      setLoading(false);
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🏥 Fetching pharmacy details for ID:', id);
+        const response = await getPharmacyById(id);
+        
+        // Handle different response structures
+        const pharmacyData = response.data || response.pharmacy || response;
+        
+        // Normalize pharmacy data
+        const normalizedPharmacy = {
+          ...pharmacyData,
+          id: pharmacyData.id || pharmacyData._id || pharmacyData.pharmacyId,
+        };
+        
+        console.log('✅ Pharmacy details loaded:', normalizedPharmacy);
+        setPharmacy(normalizedPharmacy);
+      } catch (err) {
+        console.error('❌ Error fetching pharmacy details:', err);
+        
+        // Handle 401 errors gracefully
+        if (err.response?.status === 401) {
+          console.error('Authentication failed. Please login again.');
+          return;
+        }
+        
+        // Handle 404 errors
+        if (err.response?.status === 404) {
+          setError('Pharmacy not found');
+          return;
+        }
+        
+        setError(err.message || 'Failed to load pharmacy details');
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchPharmacy();
@@ -70,11 +67,14 @@ const PharmacyDetail = () => {
     return <PagePreloader message="Loading pharmacy details..." />;
   }
 
-  if (!pharmacy) {
+  if (error || !pharmacy) {
     return (
       <div className="pharmacy-detail-page">
         <div className="pharmacy-not-found">
-          <h2>Pharmacy not found</h2>
+          <h2>{error || 'Pharmacy not found'}</h2>
+          {error && (
+            <p style={{ color: '#dc2626', marginTop: '12px' }}>{error}</p>
+          )}
           <button onClick={() => navigate('/pharmacies')} className="back-button">
             <HiArrowLeft />
             Back to Pharmacies
