@@ -196,6 +196,34 @@
     color: #1a202c;
     margin: 0;
   }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .view-invoice-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #00A170;
+    border: none;
+    color: #ffffff;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .view-invoice-button:hover {
+    background: #008B5E;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 161, 112, 0.3);
+  }
   
   .close-button {
     background: none;

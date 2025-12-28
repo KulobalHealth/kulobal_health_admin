@@ -2,7 +2,7 @@ import React from 'react';
 import { HiXMark } from 'react-icons/hi2';
 import './OrderDetails.css';
 
-const OrderDetails = ({ order, onClose, onConfirmOrder, onUpdateStatus, loading = false, error = null }) => {
+const OrderDetails = ({ order, onClose, onConfirmOrder, onUpdateStatus, onViewInvoice, loading = false, error = null }) => {
   if (!order) return null;
 
   const getStatusDotColor = (color) => {
@@ -94,9 +94,16 @@ const OrderDetails = ({ order, onClose, onConfirmOrder, onUpdateStatus, loading 
         {/* Header */}
         <div className="order-details-header">
           <h2 className="order-details-title">Order details</h2>
-          <button className="close-button" onClick={onClose} aria-label="Close">
-            <HiXMark />
-          </button>
+          <div className="header-actions">
+            {onViewInvoice && (
+              <button className="view-invoice-button" onClick={onViewInvoice}>
+                View Invoice
+              </button>
+            )}
+            <button className="close-button" onClick={onClose} aria-label="Close">
+              <HiXMark />
+            </button>
+          </div>
         </div>
 
         {/* Loading State */}

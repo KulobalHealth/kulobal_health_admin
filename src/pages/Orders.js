@@ -12,6 +12,7 @@ import { FaShoppingBag } from 'react-icons/fa';
 import { getOrders, getOrderById, updateOrderStatus, shipOrder, completeOrder } from '../utils/ordersService';
 import { toast } from 'react-toastify';
 import OrderDetails from '../components/Orders/OrderDetails';
+import OrderInvoice from '../components/Orders/OrderInvoice';
 import './Orders.css';
 
 const Orders = () => {
@@ -21,6 +22,7 @@ const Orders = () => {
   const [itemsPerPage, setItemsPerPage] = useState('10 per page');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showInvoice, setShowInvoice] = useState(false);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -496,6 +498,15 @@ const Orders = () => {
   const handleCloseDetails = () => {
     setSelectedOrder(null);
     setOrderDetailsError(null);
+  };
+
+  const handleViewInvoice = (order) => {
+    setSelectedOrder(order);
+    setShowInvoice(true);
+  };
+
+  const handleCloseInvoice = () => {
+    setShowInvoice(false);
   };
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
@@ -1008,14 +1019,23 @@ const Orders = () => {
       </div>
 
       {/* Order Details Panel */}
-      {selectedOrder && (
+      {selectedOrder && !showInvoice && (
         <OrderDetails
           order={selectedOrder}
           onClose={handleCloseDetails}
           onConfirmOrder={handleConfirmOrder}
           onUpdateStatus={handleUpdateOrderStatus}
+          onViewInvoice={() => handleViewInvoice(selectedOrder)}
           loading={orderDetailsLoading}
           error={orderDetailsError}
+        />
+      )}
+
+      {/* Invoice Modal */}
+      {showInvoice && selectedOrder && (
+        <OrderInvoice
+          order={selectedOrder}
+          onClose={handleCloseInvoice}
         />
       )}
 
