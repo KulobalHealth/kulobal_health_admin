@@ -41,8 +41,8 @@ const Sidebar = () => {
     { path: '/suppliers', label: 'Suppliers', icon: TruckIcon },
     { path: '/products', label: 'Products', icon: Package01Icon },
     { path: '/transactions', label: 'Transactions', icon: CreditCardIcon },
-    { path: '/analytics', label: 'Analytics & Reports', icon: Chart01Icon },
-    { path: '/settings', label: 'Account & Settings', icon: Settings01Icon },
+    { path: '/analytics', label: 'Analytics', icon: Chart01Icon },
+    { path: '/settings', label: 'Settings', icon: Settings01Icon },
   ];
 
   return (
@@ -57,7 +57,7 @@ const Sidebar = () => {
               className={`sidebar-link ${isActive ? 'active' : ''}`}
             >
               <span className="sidebar-icon">
-                <HugeiconsIcon icon={item.icon} size={20} />
+                <HugeiconsIcon icon={item.icon} size={22} />
               </span>
               <span className="sidebar-label">{item.label}</span>
             </Link>
@@ -67,7 +67,7 @@ const Sidebar = () => {
       <div className="sidebar-footer">
         <button className="sidebar-logout-button" onClick={handleLogout}>
           <span className="sidebar-icon">
-            <HugeiconsIcon icon={Logout01Icon} size={20} />
+            <HugeiconsIcon icon={Logout01Icon} size={22} />
           </span>
           <span className="sidebar-label">Logout</span>
         </button>

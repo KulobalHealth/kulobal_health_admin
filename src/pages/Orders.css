@@ -324,14 +324,22 @@
   font-weight: 400;
 }
 
-.order-separator {
-  color: #d1d5db;
-  font-weight: 400;
+/* Pharmacy Cell */
+.pharmacy-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.pharmacy-name {
-  font-size: 12px;
-  color: #6b7280;
+.pharmacy-name-text {
+  font-size: 13px;
+  color: #1a202c;
+  font-weight: 600;
+}
+
+.pharmacy-location {
+  font-size: 11px;
+  color: #9ca3af;
   font-weight: 400;
 }
 
@@ -363,6 +371,14 @@
   border-radius: 50%;
   display: inline-block;
 }
+
+/* Date Cell */
+.order-date {
+  font-size: 13px;
+  color: #1a202c;
+  font-weight: 500;
+}
+
 /* Order Status */
 .order-status {
   display: inline-flex;
@@ -374,7 +390,7 @@
   border-radius: 20px;
   background: #f9fafb;
   white-space: nowrap;
-} color: #1a202c;
+}
 /* Actions Cell */
 .actions-cell {
   display: flex;

@@ -9,7 +9,7 @@ import {
   HiXMark
 } from 'react-icons/hi2';
 import { FaShoppingBag } from 'react-icons/fa';
-import { getOrders, getOrderById, updateOrderStatus } from '../utils/ordersService';
+import { getOrders, getOrderById, updateOrderStatus, shipOrder, completeOrder } from '../utils/ordersService';
 import { toast } from 'react-toastify';
 import OrderDetails from '../components/Orders/OrderDetails';
 import './Orders.css';
@@ -512,10 +512,24 @@ const Orders = () => {
         throw new Error('Pharmacy ID not found. Please ensure the order has a pharmacy ID.');
       }
       
-      console.log('Processing order:', { orderId, pharmacyId, newStatus });
+      console.log('Updating order status:', { orderId, pharmacyId, newStatus });
       
-      // Update order status via API using process-order endpoint
-      await updateOrderStatus(orderId, pharmacyId);
+      // Call the appropriate endpoint based on the new status
+      let apiResponse;
+      if (newStatus === 'PROCESSING') {
+        // Use process-order endpoint
+        apiResponse = await updateOrderStatus(orderId, pharmacyId);
+      } else if (newStatus === 'SHIPPED') {
+        // Use ship-order endpoint
+        apiResponse = await shipOrder(orderId, pharmacyId);
+      } else if (newStatus === 'DELIVERED') {
+        // Use complete-order endpoint
+        apiResponse = await completeOrder(orderId, pharmacyId);
+      } else {
+        throw new Error(`Unknown status: ${newStatus}`);
+      }
+      
+      console.log('API Response:', apiResponse);
       
       // Show success message
       const statusMessages = {
@@ -864,6 +878,7 @@ const Orders = () => {
             <thead>
               <tr>
                 <th>Order</th>
+                <th>Pharmacy</th>
                 <th>Amount</th>
                 <th>Date</th>
                 <th>Status</th>
@@ -873,7 +888,7 @@ const Orders = () => {
             <tbody>
               {paginatedOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>
                     <div style={{ color: '#9ca3af', fontSize: '14px' }}>
                       No orders found matching your criteria.
                     </div>
@@ -889,12 +904,14 @@ const Orders = () => {
                       </div>
                       <div className="order-id-content">
                         <div className="product-name">{order.productName}</div>
-                        <div className="order-meta">
-                          <span className="order-id">{order.id}</span>
-                          <span className="order-separator">•</span>
-                          <span className="pharmacy-name">{order.pharmacyName}</span>
-                        </div>
+                        <div className="order-id">{order.id}</div>
                       </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="pharmacy-cell">
+                      <div className="pharmacy-name-text">{order.pharmacyName}</div>
+                      <div className="pharmacy-location">{order.location}</div>
                     </div>
                   </td>
                   <td>
@@ -913,10 +930,7 @@ const Orders = () => {
                     </div>
                   </td>
                   <td>
-                    <div className="date-cell">
-                      <div className="order-date">{order.orderDate}</div>
-                      <div className="order-location">{order.location}</div>
-                    </div>
+                    <div className="order-date">{order.orderDate}</div>
                   </td>
                   <td>
                     <div

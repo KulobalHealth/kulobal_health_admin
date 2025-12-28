@@ -53,8 +53,8 @@ const Pharmacies = () => {
           pharmacistLicenceNumber: pharmacy.pharmacistLicenceNumber || '',
           email: pharmacy.email || '',
           phone: pharmacy.phoneNumber || pharmacy.phone || '',
-          subscriptionPlan: pharmacy.subscriptionPlan || 'N/A',
-          subscriptionStatus: pharmacy.subscriptionStatus || 'N/A',
+          subscriptionPlan: pharmacy.subscriptionPlan || 'Free Trial',
+          subscriptionStatus: pharmacy.subscriptionStatus || 'Active',
           subscriptionExpiry: pharmacy.subscriptionExpiry || '',
           region: pharmacy.region || '',
           city: pharmacy.city || '',
@@ -137,8 +137,15 @@ const Pharmacies = () => {
   };
 
   const handleViewPharmacy = (pharmacy) => {
-    // Pass the full pharmacy object via state
-    navigate(`/pharmacies/${pharmacy.id}`, { state: { pharmacy } });
+    // Navigate to pharmacy detail page and pass pharmacy data via state
+    navigate(`/pharmacies/${pharmacy.id || pharmacy.pharmacyId}`, {
+      state: { pharmacy }
+    });
+  };
+
+  const handleEditPharmacy = (pharmacy) => {
+    // TODO: Implement edit functionality
+    console.log('Edit pharmacy:', pharmacy);
   };
 
   const handleDeletePharmacy = (pharmacy) => {

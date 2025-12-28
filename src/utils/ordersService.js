@@ -163,6 +163,54 @@ export const updateOrderStatus = async (orderId, pharmacyId) => {
   }
 };
 
+// Ship order
+export const shipOrder = async (orderId, pharmacyId) => {
+  try {
+    // Remove # prefix if present
+    let cleanOrderId = orderId;
+    if (typeof cleanOrderId === 'string' && cleanOrderId.startsWith('#')) {
+      cleanOrderId = cleanOrderId.substring(1);
+    }
+    
+    console.log('🚚 Shipping order (calling /orders/ship-order):', { orderId: cleanOrderId, pharmacyId });
+
+    const response = await apiClient.patch('/orders/ship-order', {
+      pharmacyId: pharmacyId,
+      orderId: cleanOrderId
+    });
+    console.log('✅ Ship Order Response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error shipping order:', error);
+    console.error('Error details:', error.response?.data);
+    throw error;
+  }
+};
+
+// Complete order
+export const completeOrder = async (orderId, pharmacyId) => {
+  try {
+    // Remove # prefix if present
+    let cleanOrderId = orderId;
+    if (typeof cleanOrderId === 'string' && cleanOrderId.startsWith('#')) {
+      cleanOrderId = cleanOrderId.substring(1);
+    }
+    
+    console.log('✅ Completing order (calling /orders/complete-order):', { orderId: cleanOrderId, pharmacyId });
+
+    const response = await apiClient.patch('/orders/complete-order', {
+      pharmacyId: pharmacyId,
+      orderId: cleanOrderId
+    });
+    console.log('✅ Complete Order Response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error completing order:', error);
+    console.error('Error details:', error.response?.data);
+    throw error;
+  }
+};
+
 // Confirm order
 export const confirmOrder = async (id) => {
   try {
