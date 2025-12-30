@@ -3,6 +3,7 @@ import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { isAuthenticated } from '../../utils/authService';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import Footer from './Footer';
 import './Layout.css';
 
 const Layout = ({ children }) => {
@@ -22,6 +23,7 @@ const Layout = ({ children }) => {
           {children || <Outlet />}
         </main>
       </div>
+      <Footer />
     </div>
   );
 };

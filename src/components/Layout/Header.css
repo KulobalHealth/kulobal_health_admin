@@ -1,6 +1,6 @@
 .header {
-  background: #000000;
-  border-bottom: 1px solid #333333;
+  background: #ffffff;
+  border-bottom: 1px solid #EEEEEE;
   padding: 16px 24px;
   display: flex;
   justify-content: space-between;
@@ -25,9 +25,9 @@
   }
   
   .logo-image {
-    height: 28px;
+    height: 40px;
     width: auto;
-    max-width: 120px;
+    max-width: 180px;
     object-fit: contain;
   }
   
@@ -40,7 +40,7 @@
   .icon-button {
     background: none;
     border: none;
-    color: #ffffff;
+    color: #00A170;
     cursor: pointer;
     padding: 8px;
     display: flex;
@@ -52,8 +52,70 @@
   }
   
   .icon-button:hover {
-    background: #333333;
+    background: #e6f7f2;
+    color: #00A170;
+  }
+
+  /* Search Container */
+  .search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    width: 18px;
+    height: 18px;
+    color: #00A170;
+    pointer-events: none;
+  }
+
+  .search-input {
+    padding: 8px 12px 8px 38px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    width: 250px;
+    outline: none;
+    transition: all 0.2s ease;
+    background: #ffffff;
+  }
+
+  .search-input:focus {
+    border-color: #00A170;
+    box-shadow: 0 0 0 3px rgba(0, 161, 112, 0.1);
+  }
+
+  .search-input::placeholder {
+    color: #9ca3af;
+  }
+
+  /* Add User Button */
+  .add-user-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #00A170;
     color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .add-user-button:hover {
+    background: #008c5f;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 161, 112, 0.2);
+  }
+
+  .add-user-button:active {
+    transform: translateY(0);
   }
 
   /* Notifications */
@@ -301,9 +363,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: none;
+    background: #EEEEEE;
     border: none;
-    color: #ffffff;
+    color: #00A170;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -315,12 +377,12 @@
   .user-icon {
     width: 18px;
     height: 18px;
-    color: #ffffff;
+    color: #00A170;
     flex-shrink: 0;
   }
   
   .user-button:hover {
-    background: #333333;
+    background: #e6f7f2;
   }
   
   .user-dropdown {

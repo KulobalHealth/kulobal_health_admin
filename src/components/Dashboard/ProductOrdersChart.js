@@ -1,21 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
 import { getProductOrdersData } from '../../utils/dashboardService';
 import './ProductOrderChart.css';
 
 const ProductOrdersChart = ({ dateRange }) => {
-  const [data, setData] = useState([]);
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    revenue: 0,
+    transactions: 0
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -32,17 +24,23 @@ const ProductOrdersChart = ({ dateRange }) => {
         const ordersData = response.data || response.orders || response || [];
         
         console.log('📈 Product orders data loaded:', ordersData);
-        setData(ordersData);
+        
+        // Calculate totals from data
+        const totalOrders = ordersData.reduce((sum, item) => sum + (item.orders || 0), 0);
+        const revenue = ordersData.reduce((sum, item) => sum + (item.revenue || 0), 0);
+        const transactions = ordersData.length;
+        
+        setStats({ totalOrders, revenue, transactions });
       } catch (err) {
         console.error('❌ Error fetching product orders data:', err);
         
         // Handle 404 - use fallback mock data
         if (err.response?.status === 404) {
           console.log('⚠️ Endpoint not found, using mock data');
-          setData(getMockData());
+          setStats({ totalOrders: 2895, revenue: 580000, transactions: 156 });
         } else if (err.response?.status !== 401) {
           setError(err.message || 'Failed to fetch product orders data');
-          setData(getMockData()); // Use mock data on error
+          setStats({ totalOrders: 2895, revenue: 580000, transactions: 156 });
         }
       } finally {
         setLoading(false);
@@ -52,105 +50,46 @@ const ProductOrdersChart = ({ dateRange }) => {
     fetchProductOrdersData();
   }, [dateRange]);
 
-  // Mock data fallback
-  const getMockData = () => {
-    if (dateRange === '12 months') {
-      return [
-        { month: 'Jan', orders: 120, revenue: 24000 },
-        { month: 'Feb', orders: 150, revenue: 30000 },
-        { month: 'Mar', orders: 180, revenue: 36000 },
-        { month: 'Apr', orders: 200, revenue: 40000 },
-        { month: 'May', orders: 220, revenue: 44000 },
-        { month: 'Jun', orders: 250, revenue: 50000 },
-        { month: 'Jul', orders: 280, revenue: 56000 },
-        { month: 'Aug', orders: 300, revenue: 60000 },
-        { month: 'Sep', orders: 320, revenue: 64000 },
-        { month: 'Oct', orders: 350, revenue: 70000 },
-        { month: 'Nov', orders: 380, revenue: 76000 },
-        { month: 'Dec', orders: 400, revenue: 80000 },
-      ];
-    } else if (dateRange === '30 days') {
-      return Array.from({ length: 30 }, (_, i) => ({
-        day: `Day ${i + 1}`,
-        orders: Math.floor(Math.random() * 50) + 10,
-        revenue: Math.floor(Math.random() * 10000) + 2000,
-      }));
-    } else if (dateRange === '7 days') {
-      return [
-        { day: 'Mon', orders: 45, revenue: 9000 },
-        { day: 'Tue', orders: 52, revenue: 10400 },
-        { day: 'Wed', orders: 48, revenue: 9600 },
-        { day: 'Thu', orders: 60, revenue: 12000 },
-        { day: 'Fri', orders: 65, revenue: 13000 },
-        { day: 'Sat', orders: 70, revenue: 14000 },
-        { day: 'Sun', orders: 55, revenue: 11000 },
-      ];
-    } else {
-      return [
-        { hour: '00:00', orders: 5, revenue: 1000 },
-        { hour: '06:00', orders: 8, revenue: 1600 },
-        { hour: '12:00', orders: 15, revenue: 3000 },
-        { hour: '18:00', orders: 12, revenue: 2400 },
-        { hour: '24:00', orders: 6, revenue: 1200 },
-      ];
-    }
-  };
-
-  const xAxisKey = dateRange === '12 months' ? 'month' : dateRange === '30 days' ? 'day' : dateRange === '7 days' ? 'day' : 'hour';
-
   return (
     <div className="product-orders-chart">
       <h3 className="chart-title">Product Orders & Revenue</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis
-            dataKey={xAxisKey}
-            stroke="#6b7280"
-            style={{ fontSize: '12px' }}
-          />
-          <YAxis
-            yAxisId="left"
-            stroke="#6b7280"
-            style={{ fontSize: '12px' }}
-          />
-          <YAxis
-            yAxisId="right"
-            orientation="right"
-            stroke="#6b7280"
-            style={{ fontSize: '12px' }}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-            }}
-          />
-          <Legend />
-          <Line
-            yAxisId="left"
-            type="monotone"
-            dataKey="orders"
-            stroke="#00A170"
-            strokeWidth={2}
-            name="Orders"
-            dot={{ fill: '#00A170', r: 4 }}
-            activeDot={{ r: 6 }}
-          />
-          <Line
-            yAxisId="right"
-            type="monotone"
-            dataKey="revenue"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            name="Revenue (GHS)"
-            dot={{ fill: '#3b82f6', r: 4 }}
-            activeDot={{ r: 6 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <div className="stats-cards-container">
+        <div className="stat-card">
+          <div className="stat-icon orders-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15M9 5C9 6.10457 9.89543 7 11 7H13C14.1046 7 15 6.10457 15 5M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5M12 12H15M12 16H15M9 12H9.01M9 16H9.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div className="stat-content">
+            <p className="stat-label">Total Orders</p>
+            <p className="stat-value">{stats.totalOrders.toLocaleString()}</p>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon revenue-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2V22M17 5H9.5C8.57174 5 7.6815 5.36875 7.02513 6.02513C6.36875 6.6815 6 7.57174 6 8.5C6 9.42826 6.36875 10.3185 7.02513 10.9749C7.6815 11.6313 8.57174 12 9.5 12H14.5C15.4283 12 16.3185 12.3687 16.9749 13.0251C17.6313 13.6815 18 14.5717 18 15.5C18 16.4283 17.6313 17.3185 16.9749 17.9749C16.3185 18.6313 15.4283 19 14.5 19H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div className="stat-content">
+            <p className="stat-label">Revenue</p>
+            <p className="stat-value">GHS {stats.revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon transactions-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M17 9V7C17 5.89543 16.1046 5 15 5H5C3.89543 5 3 5.89543 3 7V13C3 14.1046 3.89543 15 5 15H7M9 19H19C20.1046 19 21 18.1046 21 17V11C21 9.89543 20.1046 9 19 9H9C7.89543 9 7 9.89543 7 11V17C7 18.1046 7.89543 19 9 19ZM14 14C14 14.5523 13.5523 15 13 15C12.4477 15 12 14.5523 12 14C12 13.4477 12.4477 13 13 13C13.5523 13 14 13.4477 14 14Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div className="stat-content">
+            <p className="stat-label">Transactions</p>
+            <p className="stat-value">{stats.transactions.toLocaleString()}</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

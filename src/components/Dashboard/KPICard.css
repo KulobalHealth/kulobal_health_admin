@@ -6,6 +6,20 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     transition: box-shadow 0.2s ease;
   }
+
+  .kpi-card-green {
+    background: #00A170;
+  }
+
+  .kpi-card-green .kpi-title,
+  .kpi-card-green .kpi-value,
+  .kpi-card-green .kpi-change-text {
+    color: #ffffff;
+  }
+
+  .kpi-card-green svg path {
+    fill: #ffffff;
+  }
   
   .kpi-card:hover {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiBell, HiCheck, HiXMark, HiUser } from 'react-icons/hi2';
+import { HiBell, HiCheck, HiXMark, HiUser, HiMagnifyingGlass, HiUserPlus } from 'react-icons/hi2';
 import { logout, getCurrentUser } from '../../utils/authService';
 import { getOrders } from '../../utils/ordersService';
 import logoImage from '../../assets/images/logo.png';
@@ -268,6 +268,47 @@ const Header = () => {
             </>
           )}
         </div>
+        <div className="search-container">
+          <HiMagnifyingGlass className="search-icon" />
+          <input
+            type="text"
+            placeholder="Search..."
+            className="search-input"
+          />
+        </div>
+        <button className="add-user-button" aria-label="Add user">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M4 12C4 12 5.5 6 12 6C18.5 6 20 12 20 12C20 12 18.5 18 12 18C5.5 18 4 12 4 12Z"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <animateTransform
+                attributeName="transform"
+                type="rotate"
+                from="0 12 12"
+                to="360 12 12"
+                dur="1s"
+                repeatCount="indefinite"
+              />
+            </path>
+            <path
+              d="M12 9V15M9 12H15"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+          <span>Sync Data</span>
+        </button>
         <button className="icon-button" aria-label="Dark mode">
           <svg
             width="20"

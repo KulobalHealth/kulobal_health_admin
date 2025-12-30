@@ -1,9 +1,9 @@
 import React from 'react';
 import './KPICard.css';
 
-const KPICard = ({ title, value, change, showChange }) => {
+const KPICard = ({ title, value, change, showChange, isGreen }) => {
   return (
-    <div className="kpi-card">
+    <div className={`kpi-card ${isGreen ? 'kpi-card-green' : ''}`}>
       <h3 className="kpi-title">{title}</h3>
       <div className="kpi-content">
         <p className="kpi-value">{value}</p>

@@ -170,6 +170,7 @@ const Dashboard = () => {
             value={kpi.value}
             change={kpi.change}
             showChange={kpi.showChange}
+            isGreen={kpi.title === 'Total DDI Users'}
           />
         ))}
       </div>

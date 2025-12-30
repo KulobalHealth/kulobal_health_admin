@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { login } from '../../utils/authService';
-import loginImage from '../../assets/images/login.png';
 import logoImage from '../../assets/images/logo.png';
 import './Login.css';
 
@@ -175,7 +174,7 @@ const Login = () => {
       </div>
 
       {/* Right Panel - Background Image */}
-      <div className="login-right-panel" style={{ backgroundImage: `url(${loginImage})` }}>
+      <div className="login-right-panel" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/MockUp4.png)` }}>
         <div className="background-overlay">
           {/* Holographic UI Elements */}
           <div className="holographic-elements">
