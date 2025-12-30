@@ -9,7 +9,7 @@ import {
   HiXMark
 } from 'react-icons/hi2';
 import { FaShoppingBag } from 'react-icons/fa';
-import { getOrders, getOrderById, updateOrderStatus, shipOrder, completeOrder } from '../utils/ordersService';
+import { getOrders, getOrderById, updateOrderStatus, shipOrder, completeOrder, getOrdersByStatus, getOrdersByDate } from '../utils/ordersService';
 import { toast } from 'react-toastify';
 import OrderDetails from '../components/Orders/OrderDetails';
 import OrderInvoice from '../components/Orders/OrderInvoice';
@@ -30,6 +30,7 @@ const Orders = () => {
   const [orderDetailsError, setOrderDetailsError] = useState(null);
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({
+    status: '',
     dateFrom: '',
     dateTo: '',
     paymentStatus: '',
@@ -409,6 +410,82 @@ const Orders = () => {
     setCurrentPage(1);
   }, [searchQuery, selectedStatus, selectedDate, itemsPerPage]);
 
+  // Handle date filter changes
+  useEffect(() => {
+    const fetchOrdersByDate = async () => {
+      if (selectedDate === 'Select Dates' || !selectedDate) {
+        return; // Don't fetch if no date is selected
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        let dateParam = '';
+        const today = new Date();
+
+        // Calculate date based on selection
+        if (selectedDate === 'Today') {
+          dateParam = today.toISOString().split('T')[0];
+        } else if (selectedDate === 'This Week') {
+          // Get date from 7 days ago
+          const weekAgo = new Date(today);
+          weekAgo.setDate(today.getDate() - 7);
+          dateParam = weekAgo.toISOString().split('T')[0];
+        } else if (selectedDate === 'This Month') {
+          // Get date from 30 days ago
+          const monthAgo = new Date(today);
+          monthAgo.setDate(today.getDate() - 30);
+          dateParam = monthAgo.toISOString().split('T')[0];
+        } else if (selectedDate === 'Custom Range') {
+          // For custom range, open advanced filters
+          setShowAdvancedFilter(true);
+          setLoading(false);
+          return;
+        }
+
+        if (dateParam) {
+          console.log('📅 Fetching orders by date:', dateParam);
+          const response = await getOrdersByDate(dateParam);
+
+          // Handle different response structures
+          let ordersData = [];
+          
+          if (Array.isArray(response)) {
+            ordersData = response;
+          } else if (response?.data) {
+            if (Array.isArray(response.data)) {
+              ordersData = response.data;
+            } else if (response.data.data && Array.isArray(response.data.data)) {
+              ordersData = response.data.data;
+            } else if (response.data.orders && Array.isArray(response.data.orders)) {
+              ordersData = response.data.orders;
+            }
+          } else if (response?.orders && Array.isArray(response.orders)) {
+            ordersData = response.orders;
+          }
+
+          // Normalize order data
+          const normalizedOrders = ordersData.map(normalizeOrderData);
+
+          console.log('✅ Orders by date loaded:', normalizedOrders.length);
+          setOrders(normalizedOrders);
+
+          if (normalizedOrders.length === 0) {
+            setError(`No orders found for ${selectedDate}`);
+          }
+        }
+      } catch (err) {
+        console.error('❌ Error fetching orders by date:', err);
+        setError(err.message || 'Failed to fetch orders by date');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrdersByDate();
+  }, [selectedDate]);
+
   const handleSearch = (e) => {
     e.preventDefault();
     // Search is handled by filteredOrders
@@ -731,14 +808,57 @@ const Orders = () => {
       [field]: value,
     }));
   };
-
-  const handleApplyAdvancedFilters = () => {
+  const handleApplyAdvancedFilters = async () => {
+    // If status filter is selected, fetch orders by status from API
+    if (advancedFilters.status && advancedFilters.status !== 'All') {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔍 Applying advanced filter - Status:', advancedFilters.status);
+        const response = await getOrdersByStatus(advancedFilters.status);
+        
+        // Handle different response structures
+        let ordersData = [];
+        
+        if (Array.isArray(response)) {
+          ordersData = response;
+        } else if (response?.data) {
+          if (Array.isArray(response.data)) {
+            ordersData = response.data;
+          } else if (response.data.data && Array.isArray(response.data.data)) {
+            ordersData = response.data.data;
+          } else if (response.data.orders && Array.isArray(response.data.orders)) {
+            ordersData = response.data.orders;
+          }
+        } else if (response?.orders && Array.isArray(response.orders)) {
+          ordersData = response.orders;
+        }
+        
+        // Normalize order data
+        const normalizedOrders = ordersData.map(normalizeOrderData);
+        
+        console.log('✅ Filtered orders loaded:', normalizedOrders.length);
+        setOrders(normalizedOrders);
+        
+        if (normalizedOrders.length === 0) {
+          setError(`No orders found with status: ${advancedFilters.status}`);
+        }
+      } catch (err) {
+        console.error('❌ Error fetching filtered orders:', err);
+        setError(err.message || 'Failed to fetch filtered orders');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
     setShowAdvancedFilter(false);
     setCurrentPage(1); // Reset to first page when filters are applied
   };
 
   const handleResetAdvancedFilters = () => {
     setAdvancedFilters({
+      status: '',
       dateFrom: '',
       dateTo: '',
       paymentStatus: '',
@@ -747,6 +867,41 @@ const Orders = () => {
       location: '',
       pharmacyName: '',
     });
+    
+    // Reload all orders when filters are reset
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await getOrders();
+        let ordersData = [];
+        
+        if (Array.isArray(response)) {
+          ordersData = response;
+        } else if (response?.data) {
+          if (Array.isArray(response.data)) {
+            ordersData = response.data;
+          } else if (response.data.data && Array.isArray(response.data.data)) {
+            ordersData = response.data.data;
+          } else if (response.data.orders && Array.isArray(response.data.orders)) {
+            ordersData = response.data.orders;
+          }
+        } else if (response?.orders && Array.isArray(response.orders)) {
+          ordersData = response.orders;
+        }
+        
+        const normalizedOrders = ordersData.map(normalizeOrderData);
+        setOrders(normalizedOrders);
+        setError(null);
+      } catch (err) {
+        console.error('Error reloading orders:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchOrders();
   };
 
   const getStatusDotColor = (color) => {
@@ -1055,6 +1210,23 @@ const Orders = () => {
             </div>
 
             <div className="advanced-filter-content">
+              {/* Order Status */}
+              <div className="filter-group">
+                <label className="filter-label">Order Status</label>
+                <select
+                  value={advancedFilters.status}
+                  onChange={(e) => handleAdvancedFilterChange('status', e.target.value)}
+                  className="filter-input"
+                >
+                  <option value="">All Status</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="PROCESSING">Processing</option>
+                  <option value="SHIPPED">Shipped</option>
+                  <option value="DELIVERED">Delivered</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </select>
+              </div>
+
               {/* Date Range */}
               <div className="filter-group">
                 <label className="filter-label">Date Range</label>

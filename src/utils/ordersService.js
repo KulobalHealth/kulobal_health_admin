@@ -253,3 +253,39 @@ export const getOrderStatistics = async (params = {}) => {
   }
 };
 
+// Get orders by status filter
+export const getOrdersByStatus = async (status) => {
+  try {
+    console.log('🔍 Fetching orders by status:', status);
+    
+    const response = await apiClient.get('/orders/get-orders-by-status', {
+      params: { status }
+    });
+    
+    console.log('✅ Get Orders By Status Response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching orders by status:', error);
+    console.error('Error details:', error.response?.data);
+    throw error;
+  }
+};
+
+// Get orders history by date
+export const getOrdersByDate = async (date) => {
+  try {
+    console.log('📅 Fetching orders by date:', date);
+    
+    // Try the endpoint without the "get-" prefix (similar to other endpoints)
+    const response = await apiClient.get('/orders/history', {
+      params: { date }
+    });
+    
+    console.log('✅ Get Orders By Date Response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching orders by date:', error);
+    console.error('Error details:', error.response?.data);
+    throw error;
+  }
+};
