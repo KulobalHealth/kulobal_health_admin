@@ -4,18 +4,20 @@ import axios from 'axios';
 const apiClient = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL || 'https://kulobalhealth-backend-1.onrender.com/api/v1/admin',
   timeout: 30000, // 30 seconds
-  withCredentials: true, // Enable sending/receiving cookies with requests
+  withCredentials: false, // Disable for production to avoid CORS issues
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor - For HTTP-only cookie authentication
-// Cookies are sent automatically via withCredentials
+// Request interceptor - For authentication
 apiClient.interceptors.request.use(
   (config) => {
-    // For HTTP-only cookie auth, we don't need to add Authorization header
-    // The cookie is sent automatically by the browser
+    // Get token from localStorage for production
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     
     // Log request for debugging
     console.log('📤 API Request:', {
@@ -23,8 +25,8 @@ apiClient.interceptors.request.use(
       url: config.url,
       fullURL: config.baseURL + config.url,
       withCredentials: config.withCredentials,
-      authMethod: 'HTTP-only cookies (sent automatically)',
-      note: 'Cookies include auth credentials'
+      authMethod: token ? 'Bearer Token' : 'No Auth',
+      hasToken: !!token
     });
     
     // Log request body for POST/PUT/PATCH requests
