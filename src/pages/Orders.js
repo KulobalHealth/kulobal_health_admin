@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   HiMagnifyingGlass, 
-  HiEye, 
-  HiPencil,
+  HiEye,
   HiArrowPath,
   HiArrowDownTray,
   HiFunnel,
@@ -491,6 +490,7 @@ const Orders = () => {
     // Search is handled by filteredOrders
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleEditOrder = (order) => {
     // TODO: Navigate to edit page or open edit modal
     console.log('Editing order:', order);

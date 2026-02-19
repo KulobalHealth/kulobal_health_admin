@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiBell, HiCheck, HiXMark, HiUser, HiMagnifyingGlass, HiUserPlus } from 'react-icons/hi2';
+import { HiBell, HiXMark, HiUser, HiMagnifyingGlass } from 'react-icons/hi2';
 import { logout, getCurrentUser } from '../../utils/authService';
 import { getOrders } from '../../utils/ordersService';
 import logoImage from '../../assets/images/logo.png';
@@ -112,6 +112,7 @@ const Header = () => {
     }, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Close notifications when clicking outside

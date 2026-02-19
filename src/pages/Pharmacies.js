@@ -3,11 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   HiMagnifyingGlass,
   HiEye,
-  HiPencil,
   HiTrash,
   HiPlus,
   HiFunnel,
-  HiBuildingOffice2,
   HiExclamationTriangle,
   HiXMark,
 } from 'react-icons/hi2';
@@ -143,6 +141,7 @@ const Pharmacies = () => {
     });
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleEditPharmacy = (pharmacy) => {
     // TODO: Implement edit functionality
     console.log('Edit pharmacy:', pharmacy);

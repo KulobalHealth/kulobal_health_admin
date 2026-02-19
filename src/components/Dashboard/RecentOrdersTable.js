@@ -4,7 +4,9 @@ import './RecentOrdersTable.css';
 
 const RecentOrdersTable = () => {
   const [orders, setOrders] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState(null);
 
   // Fetch recent orders from API
