@@ -19,18 +19,20 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Log request for debugging
-    console.log('📤 API Request:', {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      fullURL: config.baseURL + config.url,
-      withCredentials: config.withCredentials,
-      authMethod: token ? 'Bearer Token' : 'No Auth',
-      hasToken: !!token
-    });
+    // Log request for debugging (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📤 API Request:', {
+        method: config.method?.toUpperCase(),
+        url: config.url,
+        fullURL: config.baseURL + config.url,
+        withCredentials: config.withCredentials,
+        authMethod: token ? 'Bearer Token' : 'No Auth',
+        hasToken: !!token
+      });
+    }
     
-    // Log request body for POST/PUT/PATCH requests
-    if (['POST', 'PUT', 'PATCH'].includes(config.method?.toUpperCase())) {
+    // Log request body for POST/PUT/PATCH requests (only in development)
+    if (process.env.NODE_ENV === 'development' && ['POST', 'PUT', 'PATCH'].includes(config.method?.toUpperCase())) {
       try {
         const body = config.data;
         if (body) {
