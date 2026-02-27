@@ -4,7 +4,7 @@
   "framework": "create-react-app",
   "installCommand": "npm install",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://kulobalhealth-backend-1.onrender.com/api/:path*" },
+    { "source": "/api/:path*", "destination": "/api/proxy/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
