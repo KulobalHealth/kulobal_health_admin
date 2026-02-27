@@ -15,7 +15,7 @@ const debugLog = (...args) => {
 const apiClient = axios.create({
   baseURL: baseURL,
   timeout: 30000, // 30 seconds
-  withCredentials: true, // Enable cookies for cross-origin requests (backend uses HTTP-only cookie auth)
+  withCredentials: false, // Disabled for cross-origin - using Bearer token auth instead
   headers: {
     'Content-Type': 'application/json',
   },
