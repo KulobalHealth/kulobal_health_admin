@@ -1,5 +1,4 @@
 const https = require('https');
-const url = require('url');
 
 module.exports = async (req, res) => {
   // Enable CORS for the response
@@ -13,15 +12,14 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // Get the path segments from the catch-all route
-  // req.query.path will be an array like ['v1', 'admin', 'auth', 'login']
-  const pathSegments = req.query.path || [];
-  const apiPath = Array.isArray(pathSegments) ? pathSegments.join('/') : pathSegments;
+  // Get the path from query parameter
+  // URL format: /api/proxy?path=v1/admin/auth/login
+  const apiPath = req.query.path || '';
   
   const backendUrl = `https://kulobalhealth-backend-1.onrender.com/api/${apiPath}`;
   
   console.log('=== PROXY REQUEST ===');
-  console.log('Path segments:', pathSegments);
+  console.log('Query path:', req.query.path);
   console.log('API Path:', apiPath);
   console.log('Backend URL:', backendUrl);
   console.log('Method:', req.method);
