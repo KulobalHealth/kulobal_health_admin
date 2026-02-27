@@ -61,6 +61,11 @@ export const login = async (credentials) => {
       throw new Error(error.response?.data?.message || 'Invalid email or password.');
     }
     
+    if (error.response?.status === 500) {
+      // Server error - could be backend issue
+      throw new Error(error.response?.data?.message || 'Server error. Please try again later.');
+    }
+    
     throw new Error(error.response?.data?.message || error.message || 'Login failed');
   }
 };
