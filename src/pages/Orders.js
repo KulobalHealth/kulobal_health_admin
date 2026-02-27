@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   HiMagnifyingGlass, 
-  HiEye,
+  HiEye, 
+  HiPencil,
   HiArrowPath,
   HiArrowDownTray,
   HiFunnel,
@@ -90,10 +91,11 @@ const Orders = () => {
 
     // Map API response to component's expected format
     return {
-      id: order.id || order.orderId || order._id || `#${order.id || 'N/A'}`,
+      id: order.orderId || order.id || order._id || 'N/A',
+      orderId: order.orderId || order.id || order._id || 'N/A', // Keep original orderId for API calls
       productName: productName,
       pharmacyName: pharmacyName,
-      amount: order.amount || order.total || order.totalAmount || '0.00',
+      amount: order.totalCost ?? order.amount ?? order.total ?? order.totalAmount ?? 0,
       paymentStatus: getStringValue(order.paymentStatus, 'Full Payment') || 
         getStringValue(order.payment?.status, 'Full Payment'),
       paymentStatusColor: order.paymentStatusColor || 
@@ -490,7 +492,6 @@ const Orders = () => {
     // Search is handled by filteredOrders
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleEditOrder = (order) => {
     // TODO: Navigate to edit page or open edit modal
     console.log('Editing order:', order);
@@ -503,9 +504,10 @@ const Orders = () => {
       setOrderDetailsLoading(true);
       setOrderDetailsError(null);
       
-      // Extract order ID - try multiple sources and remove # prefix if present
-      let orderId = order.originalOrder?.id || order.originalOrder?.orderId || order.originalOrder?._id || 
-                    order.id || order.orderId || order._id;
+      // Extract order ID - use orderId first (the UUID), then fallback to other fields
+      let orderId = order.orderId || order.originalOrder?.orderId || 
+                    order.id || order.originalOrder?.id || 
+                    order._id || order.originalOrder?._id;
       
       // Remove # prefix if present
       if (typeof orderId === 'string' && orderId.startsWith('#')) {
@@ -1082,7 +1084,7 @@ const Orders = () => {
                   </td>
                   <td>
                     <div className="amount-cell">
-                      <div className="amount">GHS {order.amount}</div>
+                      <div className="amount">GHS {typeof order.amount === 'number' ? order.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : order.amount}</div>
                       <div
                         className="payment-status"
                         style={{ color: getStatusDotColor(order.paymentStatusColor) }}

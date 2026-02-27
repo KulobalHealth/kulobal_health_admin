@@ -11,11 +11,11 @@ const Footer = () => {
           &copy; {currentYear} Property of Data Leap Technologies Ltd. All rights reserved.
         </p>
         <div className="footer-links">
-          <a href="/privacy">Privacy Policy</a>
+          <a href="#">Privacy Policy</a>
           <span className="separator">•</span>
-          <a href="/terms">Terms of Service</a>
+          <a href="#">Terms of Service</a>
           <span className="separator">•</span>
-          <a href="/audits">Audits</a>
+          <a href="#">Audits</a>
         </div>
       </div>
     </footer>

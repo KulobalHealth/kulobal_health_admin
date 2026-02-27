@@ -3,69 +3,65 @@ import apiClient from './apiClient';
 /**
  * Authentication Service
  * Handles all authentication-related API calls
+ * Backend uses HTTP-only cookies for session management
  */
+
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+// Debug logger - only logs in development
+const debugLog = (...args) => {
+  if (isDevelopment) {
+    console.log(...args);
+  }
+};
 
 // Login user
 export const login = async (credentials) => {
   try {
-    console.log('🔐 Attempting login with:', { endpoint: '/auth/login', credentials: { ...credentials, password: '***' } });
-    const response = await apiClient.post('/auth/login', credentials);
-    console.log('✅ Login response received');
-    console.log('📦 Response structure:', Object.keys(response.data));
-    console.log('📄 Full response data:', response.data);
-    console.log('📋 Response headers:', response.headers);
-    console.log('🍪 Set-Cookie header:', response.headers['set-cookie']);
+    debugLog('🔐 Attempting login...');
     
-    // Check if browser received cookies
-    console.log('🍪 Current cookies:', document.cookie);
-    console.log('🔍 Checking if auth cookie was set...');
+    const response = await apiClient.post('/auth/login', credentials);
+    
+    debugLog('✅ Login successful');
+    
+    // Store token if returned in response (as fallback, primary auth is via HTTP-only cookie)
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+    } else if (response.data.data?.token) {
+      localStorage.setItem('token', response.data.data.token);
+    }
     
     // Extract user data - all user fields are in response.data.data
     const user = response.data.data || 
                  response.data.user ||
                  response.data.admin;
     
-    console.log('👤 User data found:', !!user);
-    
-    if (document.cookie.length === 0) {
-      console.warn('⚠️ WARNING: No cookies found in browser!');
-      console.warn('💡 This means the backend is NOT setting cookies correctly.');
-      console.warn('📍 Backend must set cookies with proper CORS configuration.');
-    } else {
-      console.log('✅ Cookies found in browser:', document.cookie);
-    }
-    
     // Store user data for client-side use (for UI display, etc.)
-    // Authentication is handled by HTTP-only cookies sent automatically
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
-      console.log('✅ User data stored successfully');
-    } else {
-      console.warn('⚠️ No user data in login response');
+      debugLog('✅ User data stored');
     }
-    
-    // Remove any old token if it exists (cleanup)
-    localStorage.removeItem('token');
     
     return response.data;
   } catch (error) {
-    console.error('❌ Login error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-      url: error.config?.url,
-      baseURL: error.config?.baseURL,
-      fullURL: error.config?.baseURL + error.config?.url
-    });
+    console.error('❌ Login error:', error.message);
     
     // Provide more user-friendly error messages
-    if (error.response?.status === 404) {
-      const baseURL = error.config?.baseURL || 'Not configured';
-      throw new Error(`API server not found at ${baseURL}. Please check your API configuration and ensure the server is running.`);
+    if (!error.response) {
+      throw new Error(
+        'Cannot connect to the server. Please check your internet connection or try again later.'
+      );
     }
     
-    throw error;
+    if (error.response?.status === 404) {
+      throw new Error('Login service unavailable. Please try again later.');
+    }
+    
+    if (error.response?.status === 401) {
+      throw new Error(error.response?.data?.message || 'Invalid email or password.');
+    }
+    
+    throw new Error(error.response?.data?.message || error.message || 'Login failed');
   }
 };
 

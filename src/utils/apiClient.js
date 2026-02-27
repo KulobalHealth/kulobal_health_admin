@@ -1,10 +1,21 @@
 import axios from 'axios';
 
+// API Configuration
+const baseURL = process.env.REACT_APP_API_BASE_URL || 'https://kulobalhealth-backend-1.onrender.com/api/v1/admin';
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+// Debug logger - only logs in development
+const debugLog = (...args) => {
+  if (isDevelopment) {
+    console.log(...args);
+  }
+};
+
 // Create axios instance with default configuration
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://kulobalhealth-backend-1.onrender.com/api/v1/admin',
+  baseURL: baseURL,
   timeout: 30000, // 30 seconds
-  withCredentials: false, // Disable for production to avoid CORS issues
+  withCredentials: true, // Enable cookies for cross-origin requests (backend uses HTTP-only cookie auth)
   headers: {
     'Content-Type': 'application/json',
   },
@@ -13,39 +24,31 @@ const apiClient = axios.create({
 // Request interceptor - For authentication
 apiClient.interceptors.request.use(
   (config) => {
-    // Get token from localStorage for production
+    // Don't send token for auth endpoints (login, register, etc.)
+    const isAuthEndpoint = config.url?.includes('/auth/');
+    
+    // Get token from localStorage (fallback auth method)
     const token = localStorage.getItem('token');
-    if (token) {
+    
+    debugLog('🔐 Auth check:', {
+      url: config.url,
+      isAuthEndpoint: isAuthEndpoint,
+      tokenExists: !!token,
+      withCredentials: config.withCredentials
+    });
+    
+    // Add Bearer token as fallback (primary auth is via HTTP-only cookie)
+    if (token && !isAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
+      debugLog('✅ Authorization header added');
     }
     
-    // Log request for debugging (only in development)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('📤 API Request:', {
-        method: config.method?.toUpperCase(),
-        url: config.url,
-        fullURL: config.baseURL + config.url,
-        withCredentials: config.withCredentials,
-        authMethod: token ? 'Bearer Token' : 'No Auth',
-        hasToken: !!token
-      });
-    }
+    debugLog('📤 API Request:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      fullURL: config.baseURL + config.url
+    });
     
-    // Log request body for POST/PUT/PATCH requests (only in development)
-    if (process.env.NODE_ENV === 'development' && ['POST', 'PUT', 'PATCH'].includes(config.method?.toUpperCase())) {
-      try {
-        const body = config.data;
-        if (body) {
-          console.log('Request Body:', typeof body === 'string' ? JSON.parse(body) : body);
-          if (body.productTypeCode !== undefined) {
-            console.log('Product Type Code in request:', body.productTypeCode);
-            console.log('Product Type Code type:', typeof body.productTypeCode);
-          }
-        }
-      } catch (e) {
-        console.log('Request Body (could not parse):', config.data);
-      }
-    }
     return config;
   },
   (error) => {
@@ -59,6 +62,30 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Handle network errors (no response from server)
+    if (!error.response) {
+      console.error('🌐 Network Error - No response from server:', {
+        message: error.message,
+        code: error.code,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
+        fullURL: error.config?.baseURL + error.config?.url,
+        possibleCauses: [
+          '1. CORS is blocking the request from your domain',
+          '2. Backend server is down or unreachable',
+          '3. Network connection issue',
+          '4. Request timeout',
+          '5. Backend not configured to accept requests from this origin'
+        ],
+        solution: 'Check backend CORS configuration and ensure it allows your frontend domain'
+      });
+      
+      return Promise.reject(new Error(
+        'Cannot connect to the server. Please check your internet connection or contact support. ' +
+        'If you are the developer, check CORS configuration on the backend.'
+      ));
+    }
+
     // Handle 401 Unauthorized - Cookie expired or invalid
     if (error.response?.status === 401) {
       const isLoginRequest = error.config?.url?.includes('/auth/login');

@@ -3,39 +3,16 @@ import apiClient from './apiClient';
 /**
  * Orders Service
  * Handles all order-related API calls
- * Base URL: https://kulobalhealth-backend-1.onrender.com/api/v1/admin
- * Endpoint: /orders
- * Full URL: https://kulobalhealth-backend-1.onrender.com/api/v1/admin/orders
+ * Backend uses HTTP-only cookies for authentication
  */
 
 // Get all orders (with optional query parameters)
 export const getOrders = async (params = {}) => {
   try {
-    const user = localStorage.getItem('user');
-    
-    console.log('🔍 Fetching orders from /orders endpoint...');
-    console.log('📋 Request params:', params);
-    console.log('👤 User exists:', !!user);
-    console.log('🍪 HTTP-only cookie will be sent automatically:', true);
-    
     const response = await apiClient.get('/orders', { params });
-    console.log('✅ Get Orders Response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ Error fetching orders:', error);
-    console.error('📍 Error status:', error.response?.status);
-    console.error('📝 Error message:', error.response?.data?.message || error.message);
-    console.error('🔍 Full error data:', error.response?.data);
-    console.error('📡 Request headers that were sent:', error.config?.headers);
-    console.error('🍪 Cookie-based authentication used (no Authorization header)');
-    
-    if (error.response?.status === 401) {
-      console.error('🚫 UNAUTHORIZED: The orders endpoint returned 401.');
-      console.error('💡 Error says:', error.response?.data?.message);
-      console.error('⚠️ This means authentication is failing for /orders endpoint.');
-      console.error('🔍 Check: 1) Is cookie sent with request? 2) Is cookie valid/not expired? 3) Does backend require specific auth?');
-    }
-    
+    console.error('Error fetching orders:', error.message);
     throw error;
   }
 };

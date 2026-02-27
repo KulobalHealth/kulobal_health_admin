@@ -104,7 +104,7 @@ export const deleteProduct = async (id) => {
   
   // Try singular endpoint first: DELETE /product/{id}
   try {
-    console.log('Trying endpoint: DELETE /product/' + productId);
+    console.log('Trying endpoint: DELETE /product/${productId}');
     console.log(' Full URL:', `${baseURL}/product/${productId}`);
     
     const response = await apiClient.delete(`/product/${productId}`);
@@ -123,7 +123,7 @@ export const deleteProduct = async (id) => {
     
     // If 404 on singular, try plural endpoint
     if (error.response?.status === 404) {
-      console.log('Trying alternative endpoint: DELETE /products/' + productId);
+      console.log('Trying alternative endpoint: DELETE /products/${productId}');
       try {
         const response = await apiClient.delete(`/products/${productId}`);
         console.log('Delete successful with plural endpoint');

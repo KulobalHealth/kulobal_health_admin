@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { login } from '../../utils/authService';
@@ -14,6 +14,16 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Clear any existing auth tokens/cookies on login page load
+  useEffect(() => {
+    // Clear localStorage to ensure fresh login
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    
+    // Clear any existing token cookie
+    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  }, []);
 
   const handleChange = (e) => {
     setFormData({

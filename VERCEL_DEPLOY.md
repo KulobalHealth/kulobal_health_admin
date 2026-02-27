@@ -1,44 +1,70 @@
-# Vercel Deployment Instructions for React Project
+# Vercel Deployment Guide - KulobalHealth Admin
 
-## 1. Prerequisites
-- Ensure you have a Vercel account: https://vercel.com/signup
-- Install Vercel CLI (optional, for local deploy):
-  ```sh
-  npm install -g vercel
-  ```
+## Quick Deploy
 
-## 2. Project Build Setup
-- Your React app should have a build script in `package.json`:
-  ```json
-  "scripts": {
-    "build": "react-scripts build"
-  }
-  ```
-- The production build output will be in the `build/` directory.
-
-## 3. Add `vercel.json`
-- The provided `vercel.json` configures Vercel for static React hosting and SPA routing.
-
-## 4. Deploy to Vercel
-### Option 1: Using Vercel Dashboard
-1. Push your code to GitHub, GitLab, or Bitbucket.
-2. Go to https://vercel.com/new and import your repository.
-3. Set the build command to `npm run build` and output directory to `build` if prompted.
-4. Click "Deploy".
+### Option 1: Using Vercel Dashboard (Recommended)
+1. Push your code to GitHub
+2. Go to [vercel.com/new](https://vercel.com/new)
+3. Import your repository
+4. Vercel will auto-detect settings from `vercel.json`
+5. **Important:** Add environment variables (see below)
+6. Click **Deploy**
 
 ### Option 2: Using Vercel CLI
-1. In your project root, run:
-   ```sh
-   vercel
-   ```
-2. Follow the prompts (set build command to `npm run build`, output directory to `build`).
+```bash
+npm install -g vercel
+vercel
+```
 
-## 5. Environment Variables (Optional)
-- Set any required environment variables in the Vercel dashboard under Project Settings > Environment Variables.
+## Required Environment Variables
 
-## 6. Custom Domain (Optional)
-- Add a custom domain in the Vercel dashboard if desired.
+Set these in Vercel Dashboard → Project Settings → Environment Variables:
 
----
+| Variable | Value |
+|----------|-------|
+| `REACT_APP_API_BASE_URL` | `https://kulobalhealth-backend-1.onrender.com/api/v1/admin` |
+| `GENERATE_SOURCEMAP` | `false` |
 
-**Your React app is now ready for Vercel!**
+## Backend CORS Configuration
+
+**Important:** The backend must allow your Vercel domain for CORS and cookies to work.
+
+The backend at `kulobalhealth-backend-1.onrender.com` needs to:
+1. Add your Vercel domain to `Access-Control-Allow-Origin`
+2. Set `Access-Control-Allow-Credentials: true`
+3. Ensure cookies are set with `SameSite=None; Secure`
+
+**Ask the backend team to add your Vercel URL** (e.g., `https://kulobalhealth-admin.vercel.app`) to the CORS whitelist.
+
+## Project Configuration
+
+### vercel.json
+- Build command: `npm run build`
+- Output directory: `build`
+- Framework: Create React App
+- Includes SPA routing and security headers
+
+### Authentication
+- Backend uses HTTP-only cookies for authentication
+- `withCredentials: true` is configured in the API client
+- Cookies are automatically sent with cross-origin requests
+
+## After Deployment
+
+1. Test login functionality
+2. If you get CORS errors, confirm your Vercel domain is whitelisted on the backend
+3. Check browser DevTools → Network tab for any cookie issues
+
+## Troubleshooting
+
+### CORS Errors
+- Ensure backend has your Vercel domain in the CORS whitelist
+- Check that `Access-Control-Allow-Credentials: true` is set
+
+### Authentication Issues
+- HTTP-only cookies require `SameSite=None; Secure` on the backend
+- Verify cookies are being set (check DevTools → Application → Cookies)
+
+### 401 Unauthorized
+- Cookie may not be sent - check CORS configuration
+- Clear browser cookies and try logging in again

@@ -87,15 +87,28 @@ export const updatePharmacy = async (id, pharmacyData) => {
 export const deletePharmacy = async (id) => {
   try {
     console.log('🗑️ Deleting pharmacy with ID:', id);
-    const response = await apiClient.delete(`/pharmacy/${id}`);
+    console.log('📍 Using endpoint: DELETE /pharmacy with pharmacyId in body');
+    
+    // Delete with pharmacyId in JSON body
+    const response = await apiClient.delete('/pharmacy', {
+      data: { pharmacyId: id }
+    });
+    
     console.log('✅ Pharmacy deleted successfully');
+    console.log('📦 Response:', response.data);
     return response.data;
   } catch (error) {
     console.error('❌ Error deleting pharmacy:', error);
+    console.error('📝 Full error object:', error);
     console.error('📝 Error details:', {
       status: error.response?.status,
+      statusText: error.response?.statusText,
       message: error.response?.data?.message,
-      data: error.response?.data
+      data: error.response?.data,
+      url: error.config?.url,
+      fullURL: error.config?.baseURL + error.config?.url,
+      params: error.config?.params,
+      requestData: error.config?.data
     });
     
     // Handle specific error cases
@@ -109,6 +122,46 @@ export const deletePharmacy = async (id) => {
       throw new Error(error.response.data.message);
     } else {
       throw new Error(error.message || 'Failed to delete pharmacy. Please try again.');
+    }
+  }
+};
+
+// Reinstate deleted pharmacy
+export const reinstatePharmacy = async (id) => {
+  try {
+    console.log('🔄 Reinstating pharmacy with ID:', id);
+    console.log('📍 Using endpoint: PATCH /pharmacy with pharmacyId in body');
+    
+    // Reinstate with pharmacyId in JSON body
+    const response = await apiClient.patch('/pharmacy', {
+      pharmacyId: id
+    });
+    
+    console.log('✅ Pharmacy reinstated successfully');
+    console.log('📦 Response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error reinstating pharmacy:', error);
+    console.error('📝 Error details:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      message: error.response?.data?.message,
+      data: error.response?.data,
+      url: error.config?.url,
+      fullURL: error.config?.baseURL + error.config?.url
+    });
+    
+    // Handle specific error cases
+    if (error.response?.status === 404) {
+      throw new Error('Pharmacy not found.');
+    } else if (error.response?.status === 401) {
+      throw new Error('Authentication required. Please login again.');
+    } else if (error.response?.status === 403) {
+      throw new Error('You do not have permission to reinstate this pharmacy.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error(error.message || 'Failed to reinstate pharmacy. Please try again.');
     }
   }
 };
@@ -160,6 +213,27 @@ export const searchPharmacies = async (query, params = {}) => {
     return response.data;
   } catch (error) {
     console.error('❌ Error searching pharmacies:', error);
+    throw error;
+  }
+};
+
+// Get all deleted pharmacies
+export const getDeletedPharmacies = async (params = {}) => {
+  try {
+    console.log('🗑️ Fetching deleted pharmacies with params:', params);
+    
+    // Use /pharmacy/deleted endpoint
+    const response = await apiClient.get('/pharmacy/deleted', { params });
+    console.log('✅ Deleted pharmacies fetched successfully:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching deleted pharmacies:', error);
+    console.error('📝 Error details:', {
+      status: error.response?.status,
+      message: error.response?.data?.message,
+      data: error.response?.data,
+      url: error.config?.baseURL + error.config?.url
+    });
     throw error;
   }
 };

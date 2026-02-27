@@ -8,9 +8,7 @@ const ProductOrdersChart = ({ dateRange }) => {
     revenue: 0,
     transactions: 0
   });
-  // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState(null);
 
   // Fetch product orders data from API

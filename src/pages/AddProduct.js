@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiArrowLeft } from 'react-icons/hi2';
+import { HiArrowLeft, HiPlus } from 'react-icons/hi2';
 import apiClient from '../utils/apiClient';
 import './AddProduct.css';
 
@@ -211,11 +211,10 @@ const AddProduct = () => {
   }, []);
 
   useEffect(() => {
-    const currentImagesRef = imagesRef.current;
     return () => {
       // revoke all previews on unmount
-      currentImagesRef.forEach((url) => URL.revokeObjectURL(url));
-      currentImagesRef.clear();
+      imagesRef.current.forEach((url) => URL.revokeObjectURL(url));
+      imagesRef.current.clear();
     };
   }, []);
 

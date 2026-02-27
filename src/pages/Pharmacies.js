@@ -3,14 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import {
   HiMagnifyingGlass,
   HiEye,
+  HiPencil,
   HiTrash,
   HiPlus,
   HiFunnel,
+  HiBuildingOffice2,
   HiExclamationTriangle,
   HiXMark,
+  HiArrowPath,
 } from 'react-icons/hi2';
 import PagePreloader from '../components/common/PagePreloader';
-import { getPharmacies, deletePharmacy } from '../utils/pharmaciesService';
+import { getPharmacies, deletePharmacy, getDeletedPharmacies, reinstatePharmacy } from '../utils/pharmaciesService';
 import './Pharmacies.css';
 
 const Pharmacies = () => {
@@ -25,6 +28,8 @@ const Pharmacies = () => {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
   const [pharmacies, setPharmacies] = useState([]);
+  const [activeTab, setActiveTab] = useState('active'); // 'active' or 'deleted'
+  const [deletedPharmacies, setDeletedPharmacies] = useState([]);
 
   // Fetch pharmacies from API on component mount
   useEffect(() => {
@@ -33,42 +38,82 @@ const Pharmacies = () => {
         setLoading(true);
         setError(null);
         
-        const response = await getPharmacies();
-        
-        // Handle different response structures
-        let pharmaciesData = response.data || response.pharmacies || response || [];
-        
-        // Normalize pharmacies to match the component's expected structure
-        pharmaciesData = pharmaciesData.map(pharmacy => ({
-          id: pharmacy.id || pharmacy._id || pharmacy.pharmacyId,
-          pharmacyId: pharmacy.pharmacyId,
-          name: pharmacy.pharmacy || pharmacy.name || pharmacy.pharmacyName,
-          location: pharmacy.location || pharmacy.city,
-          branches: pharmacy.branch || pharmacy.branches || 0,
-          licenceNumber: pharmacy.licenceNumber || 'N/A',
-          address: pharmacy.gps || pharmacy.address || '',
-          pharmacistName: `${pharmacy.firstName || ''} ${pharmacy.lastName || ''}`.trim() || 'N/A',
-          pharmacistLicenceNumber: pharmacy.pharmacistLicenceNumber || '',
-          email: pharmacy.email || '',
-          phone: pharmacy.phoneNumber || pharmacy.phone || '',
-          subscriptionPlan: pharmacy.subscriptionPlan || 'Free Trial',
-          subscriptionStatus: pharmacy.subscriptionStatus || 'Active',
-          subscriptionExpiry: pharmacy.subscriptionExpiry || '',
-          region: pharmacy.region || '',
-          city: pharmacy.city || '',
-          gps: pharmacy.gps || '',
-          pharmacyBio: pharmacy.pharmacyBio || '',
-          photo: pharmacy.photo || '',
-          dateCreated: pharmacy.dateCreated || '',
-          firstName: pharmacy.firstName || '',
-          lastName: pharmacy.lastName || '',
-          totalPatients: pharmacy.totalPatients || 0,
-          rapidTestsConducted: pharmacy.rapidTestsConducted || 0,
-        }));
-        
-        console.log('📊 Pharmacies loaded:', pharmaciesData.length);
-        console.log('📊 Sample pharmacy data:', pharmaciesData[0]);
-        setPharmacies(pharmaciesData);
+        if (activeTab === 'active') {
+          const response = await getPharmacies();
+          
+          // Handle different response structures
+          let pharmaciesData = response.data || response.pharmacies || response || [];
+          
+          // Normalize pharmacies to match the component's expected structure
+          pharmaciesData = pharmaciesData.map(pharmacy => ({
+            id: pharmacy.id || pharmacy._id || pharmacy.pharmacyId,
+            pharmacyId: pharmacy.pharmacyId,
+            name: pharmacy.pharmacy || pharmacy.name || pharmacy.pharmacyName,
+            location: pharmacy.location || pharmacy.city,
+            branches: pharmacy.branch || pharmacy.branches || 0,
+            licenceNumber: pharmacy.licenceNumber || 'N/A',
+            address: pharmacy.gps || pharmacy.address || '',
+            pharmacistName: `${pharmacy.firstName || ''} ${pharmacy.lastName || ''}`.trim() || 'N/A',
+            pharmacistLicenceNumber: pharmacy.pharmacistLicenceNumber || '',
+            email: pharmacy.email || '',
+            phone: pharmacy.phoneNumber || pharmacy.phone || '',
+            subscriptionPlan: pharmacy.subscriptionPlan || 'Free Trial',
+            subscriptionStatus: pharmacy.subscriptionStatus || 'Active',
+            subscriptionExpiry: pharmacy.subscriptionExpiry || '',
+            region: pharmacy.region || '',
+            city: pharmacy.city || '',
+            gps: pharmacy.gps || '',
+            pharmacyBio: pharmacy.pharmacyBio || '',
+            photo: pharmacy.photo || '',
+            dateCreated: pharmacy.dateCreated || '',
+            firstName: pharmacy.firstName || '',
+            lastName: pharmacy.lastName || '',
+            totalPatients: pharmacy.totalPatients || 0,
+            rapidTestsConducted: pharmacy.rapidTestsConducted || 0,
+          }));
+          
+          console.log('📊 Active pharmacies loaded:', pharmaciesData.length);
+          console.log('📊 Sample pharmacy data:', pharmaciesData[0]);
+          setPharmacies(pharmaciesData);
+        } else {
+          // Fetch deleted pharmacies
+          const response = await getDeletedPharmacies();
+          
+          // Handle different response structures
+          let deletedData = response.data || response.pharmacies || response || [];
+          
+          // Normalize deleted pharmacies
+          deletedData = deletedData.map(pharmacy => ({
+            id: pharmacy.id || pharmacy._id || pharmacy.pharmacyId,
+            pharmacyId: pharmacy.pharmacyId,
+            name: pharmacy.pharmacy || pharmacy.name || pharmacy.pharmacyName,
+            location: pharmacy.location || pharmacy.city,
+            branches: pharmacy.branch || pharmacy.branches || 0,
+            licenceNumber: pharmacy.licenceNumber || 'N/A',
+            address: pharmacy.gps || pharmacy.address || '',
+            pharmacistName: `${pharmacy.firstName || ''} ${pharmacy.lastName || ''}`.trim() || 'N/A',
+            pharmacistLicenceNumber: pharmacy.pharmacistLicenceNumber || '',
+            email: pharmacy.email || '',
+            phone: pharmacy.phoneNumber || pharmacy.phone || '',
+            subscriptionPlan: pharmacy.subscriptionPlan || 'Free Trial',
+            subscriptionStatus: pharmacy.subscriptionStatus || 'Active',
+            subscriptionExpiry: pharmacy.subscriptionExpiry || '',
+            region: pharmacy.region || '',
+            city: pharmacy.city || '',
+            gps: pharmacy.gps || '',
+            pharmacyBio: pharmacy.pharmacyBio || '',
+            photo: pharmacy.photo || '',
+            dateCreated: pharmacy.dateCreated || '',
+            deletedAt: pharmacy.deletedAt || '',
+            firstName: pharmacy.firstName || '',
+            lastName: pharmacy.lastName || '',
+            totalPatients: pharmacy.totalPatients || 0,
+            rapidTestsConducted: pharmacy.rapidTestsConducted || 0,
+          }));
+          
+          console.log('🗑️ Deleted pharmacies loaded:', deletedData.length);
+          setDeletedPharmacies(deletedData);
+        }
       } catch (err) {
         // Handle 401 errors gracefully
         if (err.response?.status === 401) {
@@ -78,29 +123,41 @@ const Pharmacies = () => {
         
         // Handle 404 errors
         if (err.response?.status === 404) {
-          const errorMsg = 'Pharmacies endpoint not found. Please verify the endpoint with your backend developer.';
+          const errorMsg = activeTab === 'active' 
+            ? 'Pharmacies endpoint not found. Please verify the endpoint with your backend developer.'
+            : 'Deleted pharmacies endpoint not found. Please verify the endpoint with your backend developer.';
           setError(errorMsg);
           console.error('404 Error - Pharmacies endpoint:', {
             message: err.message,
             url: err.config?.baseURL + err.config?.url,
           });
-          setPharmacies([]);
+          if (activeTab === 'active') {
+            setPharmacies([]);
+          } else {
+            setDeletedPharmacies([]);
+          }
           return;
         }
         
         setError(err.message || 'Failed to fetch pharmacies');
         console.error('Error fetching pharmacies:', err);
-        setPharmacies([]);
+        if (activeTab === 'active') {
+          setPharmacies([]);
+        } else {
+          setDeletedPharmacies([]);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchPharmacies();
-  }, []);
+  }, [activeTab]);
 
-  // Filter pharmacies
-  const filteredPharmacies = pharmacies.filter((pharmacy) => {
+  // Filter pharmacies based on active tab
+  const currentPharmacies = activeTab === 'active' ? pharmacies : deletedPharmacies;
+  
+  const filteredPharmacies = currentPharmacies.filter((pharmacy) => {
     const matchesSearch =
       searchQuery === '' ||
       (pharmacy.name && pharmacy.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -141,15 +198,18 @@ const Pharmacies = () => {
     });
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleEditPharmacy = (pharmacy) => {
     // TODO: Implement edit functionality
     console.log('Edit pharmacy:', pharmacy);
   };
 
   const handleDeletePharmacy = (pharmacy) => {
-    const pharmacyId = pharmacy.id || pharmacy._id || pharmacy.pharmacyId;
+    // Prioritize pharmacyId field
+    const pharmacyId = pharmacy.pharmacyId || pharmacy.id || pharmacy._id;
     const pharmacyName = pharmacy.name || pharmacy.pharmacyName || 'this pharmacy';
+    
+    console.log('Delete pharmacy - Full pharmacy object:', pharmacy);
+    console.log('Delete pharmacy - Extracted pharmacyId:', pharmacyId);
     
     if (!pharmacyId) {
       console.error('Cannot delete: Pharmacy ID is missing', { pharmacy });
@@ -179,15 +239,15 @@ const Pharmacies = () => {
       
       await deletePharmacy(pharmacyIdToDelete);
       
-      // Update local state - remove deleted pharmacy from list
-      setPharmacies(pharmacies.filter((pharmacy) => {
-        const pharmacyId = pharmacy.id || pharmacy._id || pharmacy.pharmacyId;
-        return pharmacyId !== deleteModal.pharmacyId && String(pharmacyId) !== String(deleteModal.pharmacyId);
-      }));
-      
-      // Close modal and reset state
+      // Close modal first
       setDeleteModal({ isOpen: false, pharmacyId: null, pharmacyName: '' });
       setDeleteError(null);
+      
+      // Show success alert
+      alert('Pharmacy deleted successfully!');
+      
+      // Refresh the page to get updated data
+      window.location.reload();
       
       console.log('✅ Pharmacy deleted successfully');
     } catch (err) {
@@ -211,6 +271,39 @@ const Pharmacies = () => {
     setDeleting(false);
   };
 
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+    setSearchQuery('');
+    setSelectedLocation('All');
+  };
+
+  const handleReinstatePharmacy = async (pharmacy) => {
+    const pharmacyId = pharmacy.pharmacyId || pharmacy.id || pharmacy._id;
+    const pharmacyName = pharmacy.name || pharmacy.pharmacyName || 'this pharmacy';
+    
+    console.log('🔄 Reinstate pharmacy - Full pharmacy object:', pharmacy);
+    console.log('🔄 Reinstate pharmacy - Extracted pharmacyId:', pharmacyId);
+    
+    if (!pharmacyId) {
+      alert('Cannot reinstate: Pharmacy ID is missing');
+      return;
+    }
+    
+    const confirmed = window.confirm(`Are you sure you want to reinstate "${pharmacyName}"?`);
+    if (!confirmed) return;
+    
+    try {
+      await reinstatePharmacy(pharmacyId);
+      alert('Pharmacy reinstated successfully!');
+      window.location.reload();
+    } catch (err) {
+      console.error('❌ Error reinstating pharmacy:', err);
+      const errorMessage = err.message || 'Failed to reinstate pharmacy. Please try again.';
+      alert(errorMessage);
+    }
+  };
+
   const getInitials = (name) => {
     if (!name || typeof name !== 'string') {
       return 'N/A';
@@ -223,8 +316,8 @@ const Pharmacies = () => {
       .slice(0, 2);
   };
 
-  // Get unique locations
-  const locations = ['All', ...new Set(pharmacies.map((p) => p.location).filter(Boolean))];
+  // Get unique locations from current tab data
+  const locations = ['All', ...new Set(currentPharmacies.map((p) => p.location).filter(Boolean))];
 
   // Generate page numbers
   const pages = [];
@@ -247,6 +340,28 @@ const Pharmacies = () => {
         <button className="add-pharmacy-button" onClick={() => navigate('/pharmacies/add')}>
           <HiPlus />
           <span>Add New Pharmacy</span>
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="pharmacies-tabs">
+        <button
+          className={`tab-button ${activeTab === 'active' ? 'active' : ''}`}
+          onClick={() => handleTabChange('active')}
+        >
+          Active Pharmacies
+          {pharmacies.length > 0 && (
+            <span className="tab-count">{pharmacies.length}</span>
+          )}
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'deleted' ? 'active' : ''}`}
+          onClick={() => handleTabChange('deleted')}
+        >
+          Deleted Pharmacies
+          {deletedPharmacies.length > 0 && (
+            <span className="tab-count">{deletedPharmacies.length}</span>
+          )}
         </button>
       </div>
 
@@ -325,7 +440,11 @@ const Pharmacies = () => {
                   <th>Branches</th>
                   <th>Pharmacist</th>
                   <th>Contact</th>
-                  <th>Subscription</th>
+                  {activeTab === 'active' ? (
+                    <th>Subscription</th>
+                  ) : (
+                    <th>Deleted At</th>
+                  )}
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -333,7 +452,7 @@ const Pharmacies = () => {
                 {paginatedPharmacies.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="empty-state">
-                      No pharmacies found
+                      {activeTab === 'active' ? 'No active pharmacies found' : 'No deleted pharmacies found'}
                     </td>
                   </tr>
                 ) : (
@@ -366,7 +485,16 @@ const Pharmacies = () => {
                         </div>
                       </td>
                       <td>
-                        <span className="subscription-badge">Free Trial</span>
+                        {activeTab === 'active' ? (
+                          <span className="subscription-badge">Free Trial</span>
+                        ) : (
+                          <span className="deleted-date">
+                            {pharmacy.deletedAt 
+                              ? new Date(pharmacy.deletedAt).toLocaleDateString()
+                              : 'N/A'
+                            }
+                          </span>
+                        )}
                       </td>
                       <td>
                         <div className="action-buttons">
@@ -377,13 +505,23 @@ const Pharmacies = () => {
                           >
                             <HiEye />
                           </button>
-                          <button
-                            className="action-button delete"
-                            onClick={() => handleDeletePharmacy(pharmacy)}
-                            title="Delete"
-                          >
-                            <HiTrash />
-                          </button>
+                          {activeTab === 'active' ? (
+                            <button
+                              className="action-button delete"
+                              onClick={() => handleDeletePharmacy(pharmacy)}
+                              title="Delete"
+                            >
+                              <HiTrash />
+                            </button>
+                          ) : (
+                            <button
+                              className="action-button reinstate"
+                              onClick={() => handleReinstatePharmacy(pharmacy)}
+                              title="Reinstate Pharmacy"
+                            >
+                              <HiArrowPath />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

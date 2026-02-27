@@ -4,10 +4,16 @@ import './RecentOrdersTable.css';
 
 const RecentOrdersTable = () => {
   const [orders, setOrders] = useState([]);
-  // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState(null);
+
+  const formatAmount = (value) => {
+    const numericValue = typeof value === 'string' ? Number(value) : value;
+    if (Number.isFinite(numericValue)) {
+      return numericValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return '0.00';
+  };
 
   // Fetch recent orders from API
   useEffect(() => {
@@ -18,20 +24,46 @@ const RecentOrdersTable = () => {
 
         const response = await getRecentOrders({ limit: 10 });
         
+        // Debug: log everything
+        console.log('📦 FULL Raw API response:', JSON.stringify(response, null, 2));
+        console.log('📦 response.orderData:', response.orderData);
+        console.log('📦 response.data:', response.data);
+        console.log('📦 response.data?.orderData:', response.data?.orderData);
+        
         // Handle different response structures
-        let ordersData = response.data || response.orders || response || [];
+        // API may return { data: { orderData: [...] } } or { data: [...] } or { orders: [...] }
+        let ordersData = response.orderData || response.data?.orderData || response.data || response.orders || response || [];
+        
+        // Ensure it's an array
+        if (!Array.isArray(ordersData)) {
+          console.log('⚠️ ordersData is not an array, trying to extract:', ordersData);
+          ordersData = ordersData.orderData || ordersData.data || [];
+        }
+        
+        console.log('📦 Final ordersData array:', ordersData);
+        console.log('📦 ordersData length:', ordersData.length);
+        
+        if (ordersData.length > 0) {
+          console.log('📦 First order keys:', Object.keys(ordersData[0]));
+          console.log('📦 First order totalCost:', ordersData[0].totalCost);
+        }
         
         // Normalize orders data
-        ordersData = ordersData.map(order => ({
-          orderId: order.orderId || order.id || order._id || 'N/A',
-          productName: order.productName || order.product || 'Unknown Product',
-          pharmacyName: order.pharmacyName || order.pharmacy || 'Unknown Pharmacy',
-          amount: order.amount || order.total || order.totalAmount || '0.00',
-          paymentStatus: order.paymentStatus || order.payment || 'Pending',
-          orderDate: order.orderDate || order.createdAt || order.date || new Date().toLocaleDateString(),
-          location: order.location || order.city || order.region || 'N/A',
-          status: order.status || order.orderStatus || 'New Order',
-        }));
+        ordersData = ordersData.map(order => {
+          console.log('💰 Processing order:', order.orderId, 'totalCost:', order.totalCost, 'type:', typeof order.totalCost);
+          return {
+            orderId: order.orderId || order.id || order._id || 'N/A',
+            productName: order.products?.[0]?.productName || order.productName || 'Multiple Products',
+            pharmacyName: order.pharmacy?.pharmacyName || order.pharmacyName || order.pharmacy || 'Unknown Pharmacy',
+            amount: order.totalCost != null ? Number(order.totalCost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00',
+            paymentStatus: order.paid ? 'Paid' : 'Unpaid',
+            paymentType: order.paymentType || 'N/A',
+            orderDate: order.dateOrdered ? new Date(order.dateOrdered).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A',
+            location: order.pharmacy?.location || order.location || 'N/A',
+            status: order.status || 'New Order',
+            numberOfItems: order.numberOfItems || order.products?.length || 0,
+          };
+        });
         
         console.log('📦 Recent orders loaded:', ordersData.length);
         setOrders(ordersData);

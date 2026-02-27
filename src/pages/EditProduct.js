@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { HiArrowLeft } from 'react-icons/hi2';
 import { getProductById, updateProduct } from '../utils/productsService';
+import { uploadImage } from '../utils/imageUploadService';
 import apiClient from '../utils/apiClient';
 import './EditProduct.css';
 

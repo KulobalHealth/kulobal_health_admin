@@ -49,6 +49,68 @@
   box-shadow: 0 4px 12px rgba(0, 161, 112, 0.3);
 }
 
+/* Tabs */
+.pharmacies-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: transparent;
+  color: #6b7280;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'DM Sans', sans-serif;
+  position: relative;
+}
+
+.tab-button:hover {
+  color: #00A170;
+  background: rgba(0, 161, 112, 0.05);
+}
+
+.tab-button.active {
+  color: #00A170;
+  border-bottom-color: #00A170;
+}
+
+.tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  background: #e5e7eb;
+  color: #6b7280;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tab-button.active .tab-count {
+  background: rgba(0, 161, 112, 0.1);
+  color: #00A170;
+}
+
+.deleted-date {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .add-pharmacy-button svg {
   width: 20px;
   height: 20px;
@@ -399,6 +461,16 @@
 .action-button.delete:hover {
   color: #ef4444;
   border-color: #ef4444;
+}
+
+.action-button.reinstate {
+  color: #00A170;
+}
+
+.action-button.reinstate:hover {
+  color: #ffffff;
+  background: #00A170;
+  border-color: #00A170;
 }
 
 /* Pagination */
