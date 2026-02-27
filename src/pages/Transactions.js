@@ -17,6 +17,7 @@ const Transactions = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // eslint-disable-next-line no-unused-vars
   const [transactions, setTransactions] = useState([
     {
       id: 'TXN-001',

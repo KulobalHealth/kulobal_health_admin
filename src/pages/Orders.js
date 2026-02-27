@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   HiMagnifyingGlass, 
   HiEye, 
-  HiPencil,
   HiArrowPath,
   HiArrowDownTray,
   HiFunnel,
   HiXMark
 } from 'react-icons/hi2';
-import { FaShoppingBag } from 'react-icons/fa';
 import { getOrders, getOrderById, updateOrderStatus, shipOrder, completeOrder, getOrdersByStatus, getOrdersByDate } from '../utils/ordersService';
 import { toast } from 'react-toastify';
 import OrderDetails from '../components/Orders/OrderDetails';
@@ -492,6 +490,7 @@ const Orders = () => {
     // Search is handled by filteredOrders
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleEditOrder = (order) => {
     // TODO: Navigate to edit page or open edit modal
     console.log('Editing order:', order);
@@ -1068,7 +1067,7 @@ const Orders = () => {
                   <td>
                     <div className="order-id-cell">
                       <div className="order-icon-wrapper">
-                        <FaShoppingBag className="order-icon" />
+                        <HiEye className="order-icon" />
                       </div>
                       <div className="order-id-content">
                         <div className="product-name">{order.productName}</div>

@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { HiXMark, HiPrinter, HiArrowDownTray } from 'react-icons/hi2';
+import { HiXMark, HiPrinter } from 'react-icons/hi2';
 import './OrderInvoice.css';
 
 const OrderInvoice = ({ order, onClose }) => {

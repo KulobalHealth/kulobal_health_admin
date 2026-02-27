@@ -4,7 +4,6 @@ import {
   HiEye,
   HiLockClosed,
   HiLockOpen,
-  HiFunnel,
   HiXMark,
   HiDocumentText,
 } from 'react-icons/hi2';

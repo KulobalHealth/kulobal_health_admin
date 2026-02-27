@@ -5,7 +5,6 @@ import {
   HiPencil,
   HiTrash,
   HiUserPlus,
-  HiXMark,
 } from 'react-icons/hi2';
 import AddSupplierModal from '../components/Suppliers/AddSupplierModal';
 import PagePreloader from '../components/common/PagePreloader';

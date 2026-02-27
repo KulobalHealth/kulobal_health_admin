@@ -11,7 +11,6 @@ import {
   HiExclamationTriangle,
   HiXMark,
 } from 'react-icons/hi2';
-import { FaShoppingBag } from 'react-icons/fa';
 import ProductDetails from '../components/Products/ProductDetails';
 import { getProducts, deleteProduct, toggleProductVisibility } from '../utils/productsService';
 import './Products.css';

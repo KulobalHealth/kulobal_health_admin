@@ -1,5 +1,5 @@
 import React from 'react';
-import { HiXMark, HiTruck, HiCreditCard, HiMapPin, HiPhone, HiEnvelope, HiCalendar, HiShoppingBag, HiCheckCircle } from 'react-icons/hi2';
+import { HiXMark, HiTruck, HiCreditCard, HiShoppingBag, HiCheckCircle } from 'react-icons/hi2';
 import './OrderDetails.css';
 
 const OrderDetails = ({ order, onClose, onConfirmOrder, onUpdateStatus, onViewInvoice, loading = false, error = null }) => {

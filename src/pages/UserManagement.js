@@ -59,6 +59,7 @@ const UserManagement = () => {
       setUsers(mockUsers);
       setLoading(false);
     }, 500);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleInputChange = (e) => {

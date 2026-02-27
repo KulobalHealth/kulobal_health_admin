@@ -4,9 +4,12 @@ import './RecentOrdersTable.css';
 
 const RecentOrdersTable = () => {
   const [orders, setOrders] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState(null);
 
+  // eslint-disable-next-line no-unused-vars
   const formatAmount = (value) => {
     const numericValue = typeof value === 'string' ? Number(value) : value;
     if (Number.isFinite(numericValue)) {

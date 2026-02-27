@@ -497,7 +497,7 @@ const ProductDetails = ({ product, onClose, onEdit }) => {
                         <div key={index} className="product-details-image">
                           <img 
                             src={imageUrl} 
-                            alt={`${productDetails.name} - Image ${index + 1}`}
+                            alt={`${productDetails.name} - ${index + 1}`}
                             loading="lazy"
                             crossOrigin="anonymous"
                             onError={(e) => {
