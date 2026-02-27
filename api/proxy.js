@@ -2,10 +2,12 @@ const https = require('https');
 const url = require('url');
 
 module.exports = async (req, res) => {
-  // Enable CORS for the response
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Enable CORS for the response - must allow credentials for cookies
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Expose-Headers', 'Set-Cookie');
 
   // Handle preflight
   if (req.method === 'OPTIONS') {
@@ -59,6 +61,12 @@ module.exports = async (req, res) => {
         options.headers['Authorization'] = req.headers.authorization;
       }
 
+      // Forward Cookie header if present (critical for HTTP-only cookie auth)
+      if (req.headers.cookie) {
+        options.headers['Cookie'] = req.headers.cookie;
+        console.log('Forwarding cookies to backend');
+      }
+
       console.log('Request options:', JSON.stringify(options, null, 2));
 
       const proxyReq = https.request(options, (proxyRes) => {
@@ -89,9 +97,18 @@ module.exports = async (req, res) => {
       proxyReq.end();
     });
 
-    // Forward set-cookie headers
+    // Forward set-cookie headers with domain rewritten for our proxy
     if (response.headers['set-cookie']) {
-      res.setHeader('Set-Cookie', response.headers['set-cookie']);
+      // Rewrite cookies to work with our domain
+      const cookies = response.headers['set-cookie'].map(cookie => {
+        // Remove the domain restriction so cookie works on any domain
+        // Also ensure SameSite=None and Secure for cross-site cookies
+        return cookie
+          .replace(/Domain=[^;]+;?\s*/gi, '')
+          .replace(/Path=\/[^;]*;?\s*/gi, 'Path=/; ');
+      });
+      console.log('Rewritten cookies:', cookies);
+      res.setHeader('Set-Cookie', cookies);
     }
 
     // Parse and return the response
