@@ -28,12 +28,28 @@ export const login = async (credentials) => {
     
     console.log('✅ Login successful:', response.data);
     
-    // Store token if returned in response (as fallback, primary auth is via HTTP-only cookie)
+    // Store token if returned in response
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
+      console.log('✅ Token stored from response.data.token');
     } else if (response.data.data?.token) {
       localStorage.setItem('token', response.data.data.token);
+      console.log('✅ Token stored from response.data.data.token');
+    } else {
+      console.warn('⚠️ No token found in response!', {
+        hasDataToken: !!response.data.token,
+        hasDataDataToken: !!response.data.data?.token,
+        responseKeys: Object.keys(response.data),
+        dataKeys: response.data.data ? Object.keys(response.data.data) : []
+      });
     }
+    
+    // Verify token was stored
+    const storedToken = localStorage.getItem('token');
+    console.log('🔍 Token verification:', {
+      stored: !!storedToken,
+      preview: storedToken ? storedToken.substring(0, 30) + '...' : null
+    });
     
     // Extract user data - all user fields are in response.data.data
     const user = response.data.data || 

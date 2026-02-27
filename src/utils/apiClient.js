@@ -37,17 +37,18 @@ apiClient.interceptors.request.use(
     // Get token from localStorage (fallback auth method)
     const token = localStorage.getItem('token');
     
-    debugLog('🔐 Auth check:', {
+    // Always log in production for debugging auth issues
+    console.log('🔐 Auth check:', {
       url: config.url,
       isAuthEndpoint: isAuthEndpoint,
       tokenExists: !!token,
-      withCredentials: config.withCredentials
+      tokenPreview: token ? token.substring(0, 20) + '...' : null
     });
     
-    // Add Bearer token as fallback (primary auth is via HTTP-only cookie)
+    // Add Bearer token for authenticated endpoints
     if (token && !isAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
-      debugLog('✅ Authorization header added');
+      console.log('✅ Authorization header added');
     }
     
     debugLog('📤 API Request:', {
