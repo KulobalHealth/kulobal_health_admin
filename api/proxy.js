@@ -1,4 +1,5 @@
 const https = require('https');
+const url = require('url');
 
 module.exports = async (req, res) => {
   // Enable CORS for the response
