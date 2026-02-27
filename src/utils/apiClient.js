@@ -1,8 +1,12 @@
 import axios from 'axios';
 
 // API Configuration
-const baseURL = process.env.REACT_APP_API_BASE_URL || 'https://kulobalhealth-backend-1.onrender.com/api/v1/admin';
+// In production (Vercel), use relative path which gets proxied to avoid CORS
+// In development, use the full backend URL
 const isDevelopment = process.env.NODE_ENV === 'development';
+const baseURL = isDevelopment 
+  ? 'https://kulobalhealth-backend-1.onrender.com/api/v1/admin'
+  : '/api/v1/admin';
 
 // Debug logger - only logs in development
 const debugLog = (...args) => {
