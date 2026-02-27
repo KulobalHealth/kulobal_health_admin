@@ -18,11 +18,15 @@ const debugLog = (...args) => {
 // Login user
 export const login = async (credentials) => {
   try {
-    debugLog('🔐 Attempting login...');
+    // Always log credentials for debugging (remove in production)
+    console.log('🔐 Attempting login with:', {
+      email: credentials.email,
+      passwordLength: credentials.password?.length
+    });
     
     const response = await apiClient.post('/auth/login', credentials);
     
-    debugLog('✅ Login successful');
+    console.log('✅ Login successful:', response.data);
     
     // Store token if returned in response (as fallback, primary auth is via HTTP-only cookie)
     if (response.data.token) {
