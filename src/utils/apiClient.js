@@ -1,12 +1,15 @@
 import axios from 'axios';
 
 // API Configuration
-// In production (Vercel), use the serverless proxy to avoid CORS/Origin header issues
-// In development, use the full backend URL directly
+// The backend has a CORS bug that causes 500 errors with Origin headers
+// We use a Vercel serverless function to proxy requests and strip the Origin header
 const isDevelopment = process.env.NODE_ENV === 'development';
+
+// In development, use backend directly
+// In production, use /api/ path which hits our serverless proxy
 const baseURL = isDevelopment 
   ? 'https://kulobalhealth-backend-1.onrender.com/api/v1/admin'
-  : '/api/proxy/v1/admin';
+  : '/api/v1/admin';
 
 // Debug logger - only logs in development
 const debugLog = (...args) => {
