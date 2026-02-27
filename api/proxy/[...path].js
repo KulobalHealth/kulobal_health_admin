@@ -1,7 +1,7 @@
 // Vercel Serverless Function to proxy API requests
 // This strips the Origin header to avoid backend CORS issues
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { path } = req.query;
   const apiPath = Array.isArray(path) ? path.join('/') : path;
   const backendUrl = `https://kulobalhealth-backend-1.onrender.com/api/${apiPath}`;
@@ -17,7 +17,7 @@ export default async function handler(req, res) {
       headers['Authorization'] = req.headers.authorization;
     }
 
-    // Make request to backend
+    // Make request to backend using node-fetch or native fetch
     const response = await fetch(backendUrl, {
       method: req.method,
       headers: headers,
@@ -43,4 +43,4 @@ export default async function handler(req, res) {
       message: 'Proxy error: ' + error.message,
     });
   }
-}
+};
