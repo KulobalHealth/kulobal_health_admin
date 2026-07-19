@@ -1,12 +1,36 @@
 {
+  "version": 2,
+  "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "build",
   "installCommand": "npm install",
+  "functions": {
+    "api/proxy.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "api/upload.js": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
-    { "source": "/api/v1/admin/image-upload", "destination": "/api/upload?path=v1/admin/image-upload" },
-    { "source": "/api/upload/:path*", "destination": "/api/upload?path=:path*" },
-    { "source": "/api/:path*", "destination": "/api/proxy?path=:path*" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/api/v1/admin/image-upload",
+      "destination": "/api/upload?path=v1/admin/image-upload"
+    },
+    {
+      "source": "/api/upload/(.*)",
+      "destination": "/api/upload?path=$1"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/proxy?path=$1"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
